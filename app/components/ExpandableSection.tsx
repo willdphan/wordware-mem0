@@ -103,7 +103,7 @@ export const ExpandableSection = ({
                     )}
                   </svg>
                 )}
-                <span className="text-sm font-normal text-white lowercase">
+                <span className="text-sm font-normal text-white lowercase font-ibm">
                   {title}
                 </span>
               </div>
@@ -154,10 +154,10 @@ export const ExpandableSection = ({
                         className="mt-2"
                       >
                         {action && (
-                          <div className="text-sm text-white">{action}</div>
+                          <div className="text-sm text-[#969696]">{action}</div>
                         )}
                         {content && (
-                          <div className="text-sm text-white">{content}</div>
+                          <div className="text-sm text-[#969696] whitespace-pre-wrap font-mono">{content}</div>
                         )}
                       </motion.div>
                     )}

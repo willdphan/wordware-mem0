@@ -106,7 +106,9 @@ export const ProgressItem: React.FC<
               {getIcon()}
             </span>
             <div className="flex flex-col flex-grow min-w-0 w-full">
-              <div className="uppercase font-medium break-words">{label}</div>
+              <div className="uppercase text-md font-medium font-ibm break-words">
+                {label}
+              </div>
               <AnimatePresence mode="wait">
                 {isHovered ? (
                   <motion.div
@@ -133,7 +135,7 @@ export const ProgressItem: React.FC<
                     initial={{ opacity: 1, height: "auto" }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="text-sm text-wrap text-[#828282]"
+                    className="text-xs font-jakarta text-wrap text-[#828282]"
                   >
                     {isSummarized && summarizedDescription
                       ? summarizedDescription

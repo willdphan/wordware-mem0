@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
 import "./globals.css";
 import { TopLeftLogo } from "./components/TopLeftLogo";
 import { IBM_Plex_Mono } from "next/font/google";

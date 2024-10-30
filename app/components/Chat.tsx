@@ -186,24 +186,9 @@ const Chat: React.FC<ChatProps> = ({
       <div ref={chatContainerRef} className="flex-grow overflow-auto p-6">
         <div className="max-w-4xl mx-auto ">
           <h3 className="text-sm border-b-[1px] border-[#969696] mx-0 md:mx-3 pb-4 text-[#538E28] mb-3 mt-8 md:mt-0">
-            <span className="uppercase text-[#457522] ">APP ID:</span>{" "}
-            <motion.span
-              initial={{ opacity: 1 }}
-              animate={{
-                opacity: [1, 0.7, 1, 0.9, 1],
-                x: [0, 1, -1, 2, 0],
-                y: [0, -1, 1, -1, 0],
-              }}
-              transition={{
-                duration: 0.2,
-                repeat: Infinity,
-                repeatType: "reverse",
-                repeatDelay: 5,
-              }}
-              className=""
-            >
-              3db7ccbe-a884-4894-9540-c17a2fb43509
-            </motion.span>
+            <span className="uppercase text-[#857AEC] ">
+              APP ID: b808405c-f9b3-4429-9426-ec57b1a97862
+            </span>
           </h3>
           <div className="p-0 rounded-md">
             {generations.map((generation, index) => {
@@ -263,7 +248,7 @@ const Chat: React.FC<ChatProps> = ({
                             <ExpandableSection
                               title="Action"
                               content={
-                                <p className="text-md text-white  font-ibm">
+                                <p className="text-md text-[#969696] font-jakarta ">
                                   {thoughtObj.action}
                                 </p>
                               }
@@ -275,7 +260,7 @@ const Chat: React.FC<ChatProps> = ({
                             <ExpandableSection
                               title="Input"
                               content={
-                                <p className="text-md text-white  font-ibm">
+                                <p className="text-md text-[#969696] font-jakarta">
                                   {thoughtObj.input}
                                 </p>
                               }
