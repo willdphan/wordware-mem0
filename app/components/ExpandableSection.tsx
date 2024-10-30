@@ -75,6 +75,43 @@ export const ExpandableSection = ({
     );
   };
 
+  const getExpandableTitle = (type: string) => {
+    // For "next" type expandables
+    const thinkingTitles = [
+      "Hold on, I'm thinking...",
+      "Creating a plan...",
+      "Planning next steps...",
+      "Working on it!",
+    ];
+
+    // For "answer" type expandables
+    const answerTitles = [
+      "I got the answer!",
+      "Found it!",
+      "Here's what I found!",
+    ];
+
+    // For "html" or code-related expandables
+    const codeTitles = [
+      "Generating code...",
+      "Whipping up code...",
+      "Writing some code...",
+    ];
+
+    switch (type) {
+      case "next":
+        return thinkingTitles[
+          Math.floor(Math.random() * thinkingTitles.length)
+        ];
+      case "answer":
+        return answerTitles[Math.floor(Math.random() * answerTitles.length)];
+      case "html":
+        return codeTitles[Math.floor(Math.random() * codeTitles.length)];
+      default:
+        return type;
+    }
+  };
+
   return (
     <div className={`${isNested ? "mb-1 ml-6" : "flex"}`}>
       {!isNested && (
@@ -103,8 +140,8 @@ export const ExpandableSection = ({
                     )}
                   </svg>
                 )}
-                <span className="text-sm font-normal text-white lowercase font-ibm">
-                  {title}
+                <span className="text-sm font-normal text-white  font-ibm">
+                  {getExpandableTitle(title)}
                 </span>
               </div>
               {description && (
@@ -157,7 +194,9 @@ export const ExpandableSection = ({
                           <div className="text-sm text-[#969696]">{action}</div>
                         )}
                         {content && (
-                          <div className="text-sm text-[#969696] whitespace-pre-wrap font-mono">{content}</div>
+                          <div className="text-sm text-[#969696] whitespace-pre-wrap font-mono">
+                            {content}
+                          </div>
                         )}
                       </motion.div>
                     )}
