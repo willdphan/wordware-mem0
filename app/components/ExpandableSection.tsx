@@ -25,16 +25,36 @@ export const ExpandableSection: React.FC<{
   const getCircleLetter = (type: string) => {
     if (!type) return null;
     const firstLetter = type.charAt(0).toUpperCase();
+
+    // Define gradient borders based on letter
+    let borderStyle = "";
+    let textColor = "";
+    if (firstLetter === "N") {
+      borderStyle =
+        "border-2 border-transparent bg-clip-padding p-[1px] bg-gradient-to-b from-[#BDFF8A] to-[#54713E]";
+      textColor = "text-[#BDFF8A]";
+    } else if (firstLetter === "A") {
+      borderStyle =
+        "border-2 border-transparent bg-clip-padding p-[1px] bg-gradient-to-b from-[#9C95FF] to-[#4A477A]";
+      textColor = "text-[#9C95FF]";
+    } else if (firstLetter === "H") {
+      borderStyle =
+        "border-2 border-transparent bg-clip-padding p-[1px] bg-gradient-to-b from-[#C5F1FF] to-[#53686F]";
+      textColor = "text-[#C5F1FF]";
+    }
+
     return (
-      <motion.div
-        className={`w-7 h-7 rounded-full bg-[#538E28] flex items-center justify-center text-xs font-medium text-white
-          ${isCurrent ? "animate-pulse-shadow" : ""}`}
-        animate={
-          isHovered ? { boxShadow: "0 0 6px 2px rgba(84, 142, 40, 0.5)" } : {}
-        }
-      >
-        {firstLetter}
-      </motion.div>
+      <div className={`rounded-full ${borderStyle}`}>
+        <motion.div
+          className={`w-7 h-7 rounded-full bg-[#20201E] flex items-center justify-center text-xs font-medium ${textColor}
+            ${isCurrent ? "animate-pulse-shadow" : ""}`}
+          animate={
+            isHovered ? { boxShadow: "0 0 6px 2px rgba(84, 142, 40, 0.5)" } : {}
+          }
+        >
+          {firstLetter}
+        </motion.div>
+      </div>
     );
   };
 
@@ -43,7 +63,7 @@ export const ExpandableSection: React.FC<{
       {!isNested && (
         <div className="mr-4 flex flex-col items-center">
           <div className="mb-2">{getCircleLetter(generationType)}</div>
-          {!isLast && <div className="w-[2px] bg-[#E5E7EB] flex-grow"></div>}
+          {!isLast && <div className="w-[1px] bg-[#E5E7EB] flex-grow"></div>}
         </div>
       )}
       <div className={`flex-grow ${isNested ? "pl-4" : ""}`}>
@@ -56,7 +76,7 @@ export const ExpandableSection: React.FC<{
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
-                fill="rgba(0,0,0,0.5)"
+                fill="white"
               >
                 <path d="M11.9999 13.1714L16.9497 8.22168L18.3639 9.63589L11.9999 15.9999L5.63599 9.63589L7.0502 8.22168L11.9999 13.1714Z"></path>
               </svg>
@@ -64,13 +84,13 @@ export const ExpandableSection: React.FC<{
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
-                fill="rgba(0,0,0,0.5)"
+                fill="white"
               >
                 <path d="M13.1717 12.0007L8.22192 7.05093L9.63614 5.63672L16.0001 12.0007L9.63614 18.3646L8.22192 16.9504L13.1717 12.0007Z"></path>
               </svg>
             )}
           </span>
-          <p className="text-sm font-normal text-black">{title}</p>
+          <p className="text-sm font-normal text-white">{title}</p>
         </div>
         {isExpanded && (
           <motion.div

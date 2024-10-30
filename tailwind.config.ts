@@ -12,6 +12,8 @@ const config: Config = {
         dm: ["DM Mono", "monospace"],
         serif: ["Noto Serif", "serif"],
         sans: ["DM Sans", "serif"],
+        ibm: ["IBM Plex Sans", "sans-serif"],
+        jakarta: ["Plus Jakarta Sans", "sans-serif"],
       },
     },
   },

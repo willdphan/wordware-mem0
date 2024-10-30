@@ -15,7 +15,7 @@ export const ProgressItem: React.FC<
   action,
 }) => {
   const getIcon = () => {
-    const iconClass = "fill-white w-7 h-7 p-1"; // Square SVG with white fill
+    const iconClass = "fill-[#20201E] w-7 h-7 p-1";
     switch (type) {
       case "NEXT":
         return (
@@ -67,7 +67,7 @@ export const ProgressItem: React.FC<
       onMouseLeave={() => onHover(-1)}
     >
       <motion.div
-        className="px-3 py-3 text-md flex flex-col bg-white text-black min-h-[70px] rounded-lg w-[300px] border-[2px] border-gray-200"
+        className="px-3 py-3 text-md flex flex-col bg-white text-black min-h-[70px] rounded-md w-[300px] border-[1px] border-[#ACACAC]"
         whileHover={{
           boxShadow: "0 0 6px 2px rgba(84, 142, 40, 0.3)",
         }}
@@ -91,7 +91,7 @@ export const ProgressItem: React.FC<
       >
         <div className="flex items-start w-full">
           <div className="flex items-start w-full">
-            <span className="mr-3 flex-shrink-0 bg-gradient-to-tl from-black/80 to-[#65ab30] p-1 mt-1 rounded-md">
+            <span className="mr-3 flex-shrink-0 bg-gradient-to-br from-[#E4FEA5] via-[#C5F1FF] to-[#D1D1FE] p-1 mt-1 rounded-md">
               {getIcon()}
             </span>
             <div className="flex flex-col flex-grow min-w-0 w-full">

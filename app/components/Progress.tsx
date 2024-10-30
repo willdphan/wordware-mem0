@@ -144,10 +144,10 @@ const Progress: React.FC<ProgressProps> = ({
 
   // Render
   return (
-    <div className="w-full h-full flex flex-col justify-center items-center bg-[#FDFAF5] relative overflow-hidden dotted-background">
+    <div className="w-full h-full flex flex-col justify-center items-center bg-[#E0DACE] relative overflow-hidden ">
       <div
-        className="absolute left-1/2 top-0 bottom-0 w-[2px] transform -translate-x-1/2"
-        style={{ background: "linear-gradient(to bottom, #1a5d1a, #8fce00)" }}
+        className="absolute left-1/2 top-0 bottom-0 w-[1.2px] transform -translate-x-1/2"
+        style={{ background: "#ACACAC" }}
       />
       <motion.div
         className="space-y-32 flex flex-col items-center min-h-[384px]"

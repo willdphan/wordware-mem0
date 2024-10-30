@@ -151,7 +151,7 @@ const Chat: React.FC<ChatProps> = ({
   }, []);
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-white via-white to-[#f2ffe9]">
+    <div className="flex flex-col h-screen bg-[#20201E]">
       <div className="flex-grow overflow-auto p-6 ">
         <div className="max-w-4xl mx-auto ">
           <h3 className="text-sm border-b-[1px] border-[#969696] mx-0 md:mx-3 pb-4 text-[#538E28] mb-3 mt-8 md:mt-0">
@@ -169,12 +169,12 @@ const Chat: React.FC<ChatProps> = ({
                 repeatType: "reverse",
                 repeatDelay: 5,
               }}
-              className="font-mono"
+              className=""
             >
               3db7ccbe-a884-4894-9540-c17a2fb43509
             </motion.span>
           </h3>
-          <div className="p-0 rounded-lg">
+          <div className="p-0 rounded-md">
             {generations.map((generation, index) => {
               let thoughtObj;
               try {
@@ -190,7 +190,7 @@ const Chat: React.FC<ChatProps> = ({
               return (
                 <div
                   key={index}
-                  className="pt-2"
+                  className="pt-2 "
                   onMouseEnter={() => setHoveredGenerationId(index)}
                   onMouseLeave={() => setHoveredGenerationId(-1)}
                 >
@@ -200,16 +200,16 @@ const Chat: React.FC<ChatProps> = ({
                     transition={{ duration: 0.5, delay: index * 0.2 }} // Stagger effect based on index
                   >
                     <ExpandableSection
-                      title={`Generation: ${generation.label}`}
+                      title={`${generation.label}`}
                       generationType={generation.label}
                       isLast={index === generations.length - 1}
                       defaultExpanded={true}
                       isCurrent={index === generations.length - 1}
                       isHovered={hoveredGenerationId === index}
                       content={
-                        <div className="space-y-1 mt-2 mb-5">
+                        <div className="space-y-1 mt-2 mb-5 font-jakarta">
                           {thoughtObj.thought && (
-                            <p className="text-sm text-[#828282]">
+                            <p className="text-xs  text-[#979797]">
                               {thoughtObj.thought.startsWith(
                                 "<!DOCTYPE html"
                               ) ? (
@@ -219,7 +219,7 @@ const Chat: React.FC<ChatProps> = ({
                                   )}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-[#538E28] hover:underline"
+                                  className="text-[#C2F4FF] hover:underline"
                                 >
                                   View Generated HTML Page
                                 </a>
@@ -232,7 +232,7 @@ const Chat: React.FC<ChatProps> = ({
                             <ExpandableSection
                               title="Action"
                               content={
-                                <p className="text-sm text-[#828282] mt-2">
+                                <p className="text-md text-white mt-2 font-ibm">
                                   {thoughtObj.action}
                                 </p>
                               }
@@ -244,7 +244,7 @@ const Chat: React.FC<ChatProps> = ({
                             <ExpandableSection
                               title="Input"
                               content={
-                                <p className="text-sm text-[#828282] mt-2">
+                                <p className="text-md text-white mt-2 font-ibm">
                                   {thoughtObj.input}
                                 </p>
                               }
@@ -269,7 +269,7 @@ const Chat: React.FC<ChatProps> = ({
       </div>
       <div className="">
         <div className="max-w-4xl mx-auto">
-          <div className="rounded-lg ">
+          <div className="rounded-md">
             <div className="p-4">
               <div className="space-y-4">
                 <motion.div
@@ -283,7 +283,7 @@ const Chat: React.FC<ChatProps> = ({
                       key={suggestion}
                       type="button"
                       onClick={() => setQuestion(suggestion)}
-                      className="px-3 py-1 text-sm text-gray-600 bg-[#F6F4EE] rounded-full hover:text-white hover:bg-[#548E28] transition-colors"
+                      className="px-3 py-1 text-sm text-white bg-[#F6F4EE] rounded-full hover:text-white hover:bg-[#548E28] transition-colors"
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ duration: 0.2, delay: index * 0.1 }}
@@ -304,7 +304,7 @@ const Chat: React.FC<ChatProps> = ({
                   id="question"
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
-                  className="flex-grow border-[#969696] rounded-md border-[1px] py-3 px-3 focus:ring focus:ring-[#538E28] focus:ring-opacity-50 placeholder:text-sm placeholder:text-[#969696] text-[#969696] text-sm text-[#4B5563]"
+                  className="flex-grow border-[#969696] rounded-md border-[1px] py-3 px-3 focus:ring focus:ring-[#538E28] focus:ring-opacity-50 placeholder:text-sm placeholder:text-[#969696] text-white text-sm bg-[#20201E]"
                   rows={1}
                   placeholder="Type your message here..."
                   required
@@ -312,7 +312,7 @@ const Chat: React.FC<ChatProps> = ({
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="px-4 py-3  rounded-md  text-sm font-normal text-white bg-black hover:bg-[#538E28] focus:outline-none focus:ring-2 focus:ring-offset-2 "
+                  className="px-4 py-3  rounded-md font-ibm text-md  text-white bg-black hover:bg-[#538E28] focus:outline-none focus:ring-2 focus:ring-offset-2 "
                 >
                   {isLoading ? "Running..." : "Submit"}
                 </button>
