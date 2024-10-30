@@ -5,6 +5,14 @@ import { motion } from "framer-motion";
 import { Generation, ChatProps } from "../types/progress";
 import { ExpandableSection } from "./ExpandableSection";
 
+const LoadingSpinner = () => (
+  <motion.div
+    className="h-6 w-6 border-2 border-white border-t-transparent rounded-full"
+    animate={{ rotate: 360 }}
+    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+  />
+);
+
 const Chat: React.FC<ChatProps> = ({
   generations,
   setGenerations,
@@ -14,6 +22,7 @@ const Chat: React.FC<ChatProps> = ({
   const [question, setQuestion] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
   const suggestions = [
     "Price of BTC?",
@@ -150,9 +159,31 @@ const Chat: React.FC<ChatProps> = ({
     };
   }, []);
 
+  // Add function to check if user is near bottom
+  const isNearBottom = () => {
+    if (!chatContainerRef.current) return false;
+
+    const container = chatContainerRef.current;
+    const threshold = 100; // pixels from bottom
+    return (
+      container.scrollHeight - container.scrollTop - container.clientHeight <
+      threshold
+    );
+  };
+
+  // Scroll effect that watches both generations and isLoading
+  useEffect(() => {
+    if (chatContainerRef.current && (isLoading || isNearBottom())) {
+      chatContainerRef.current.scrollTo({
+        top: chatContainerRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }
+  }, [generations, isLoading]);
+
   return (
     <div className="flex flex-col h-screen bg-[#20201E] p-2">
-      <div className="flex-grow overflow-auto p-6">
+      <div ref={chatContainerRef} className="flex-grow overflow-auto p-6">
         <div className="max-w-4xl mx-auto ">
           <h3 className="text-sm border-b-[1px] border-[#969696] mx-0 md:mx-3 pb-4 text-[#538E28] mb-3 mt-8 md:mt-0">
             <span className="uppercase text-[#457522] ">APP ID:</span>{" "}
@@ -190,7 +221,7 @@ const Chat: React.FC<ChatProps> = ({
               return (
                 <div
                   key={index}
-                  className="pt-2 "
+                  className="pt-3"
                   onMouseEnter={() => setHoveredGenerationId(index)}
                   onMouseLeave={() => setHoveredGenerationId(-1)}
                 >
@@ -207,9 +238,9 @@ const Chat: React.FC<ChatProps> = ({
                       isCurrent={index === generations.length - 1}
                       isHovered={hoveredGenerationId === index}
                       content={
-                        <div className="space-y-1 mt-0 mb-0 font-jakarta">
+                        <div className="space-y-1 mt-0 mb-0 font-jakarta ">
                           {thoughtObj.thought && (
-                            <p className="text-xs  text-[#979797]">
+                            <p className="text-xs  text-[#979797] ">
                               {thoughtObj.thought.startsWith(
                                 "<!DOCTYPE html"
                               ) ? (
@@ -312,9 +343,9 @@ const Chat: React.FC<ChatProps> = ({
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="px-4 py-3  rounded-md font-ibm text-md  text-white bg-black hover:bg-[#538E28] focus:outline-none focus:ring-2 focus:ring-offset-2 "
+                  className="px-4 py-3 rounded-md font-ibm text-md text-white bg-black hover:bg-[#E6FFA2] hover:text-black focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center justify-center min-w-[100px] transition-colors duration-200"
                 >
-                  {isLoading ? "Running..." : "Submit"}
+                  {isLoading ? <LoadingSpinner /> : "Submit"}
                 </button>
               </form>
             </div>

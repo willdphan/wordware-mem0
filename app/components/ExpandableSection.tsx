@@ -76,7 +76,7 @@ export const ExpandableSection = ({
   };
 
   return (
-    <div className={`${isNested ? "mb-4 ml-6" : "flex"}`}>
+    <div className={`${isNested ? "mb-1 ml-6" : "flex"}`}>
       {!isNested && (
         <div className="mr-4 flex flex-col items-center">
           <div className="mb-2">{getCircleLetter(generationType)}</div>
@@ -84,14 +84,31 @@ export const ExpandableSection = ({
         </div>
       )}
       <div className={`flex-grow ${isNested ? "pl-4" : ""}`}>
-        <div className="flex flex-col gap-2">
-          {/* Main container that wraps both title and content */}
-          <div className="bg-[#252522] p-3 rounded-md inline-block">
-            {/* Title and description */}
-            <div className="flex flex-col mb-2">
-              <span className="text-sm font-normal text-white lowercase">{title}</span>
+        <div className="flex flex-col gap-0.5">
+          <div className="bg-[#252522] px-4 py-2 rounded-md inline-block">
+            <div className="flex flex-col mb-1">
+              <div className="flex items-center gap-2 py-1">
+                {(action || content) && (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="white"
+                    className="w-4 h-4 cursor-pointer"
+                    onClick={() => setIsExpanded(!isExpanded)}
+                  >
+                    {isExpanded ? (
+                      <path d="M11.9999 13.1714L16.9497 8.22168L18.3639 9.63589L11.9999 15.9999L5.63599 9.63589L7.0502 8.22168L11.9999 13.1714Z"></path>
+                    ) : (
+                      <path d="M13.1714 12.0001L8.22168 7.05029L9.63589 5.63608L15.9999 12.0001L9.63589 18.3641L8.22168 16.9499L13.1714 12.0001Z"></path>
+                    )}
+                  </svg>
+                )}
+                <span className="text-sm font-normal text-white lowercase">
+                  {title}
+                </span>
+              </div>
               {description && (
-                <p className="text-sm text-[#969696]">{description}</p>
+                <p className="text-sm text-[#969696] py-0.5">{description}</p>
               )}
             </div>
 
@@ -105,12 +122,12 @@ export const ExpandableSection = ({
                   className="flex flex-col gap-4"
                 >
                   {/* Loading animation */}
-                  <div className="flex items-center justify-center font-Space uppercase text-sm text-[#6A6A72]">
+                  <div className="flex items-center  justify-center font-Space uppercase text-sm text-[#6A6A72]">
                     <div className="animate-pulse">[generating visual]</div>
                   </div>
-                  
+
                   {/* Dimmed placeholders */}
-                  <div className="flex flex-col gap-2">
+                  {/* <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 bg-[#6A6A72] rounded-sm opacity-50" />
                       <span className="text-sm text-[#6A6A72]">Action</span>
@@ -119,7 +136,7 @@ export const ExpandableSection = ({
                       <div className="w-4 h-4 bg-[#6A6A72] rounded-sm opacity-50" />
                       <span className="text-sm text-[#6A6A72]">Input</span>
                     </div>
-                  </div>
+                  </div> */}
                 </motion.div>
               ) : (
                 (action || content) && (
@@ -129,35 +146,21 @@ export const ExpandableSection = ({
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                   >
-                    <div className="flex flex-col gap-2">
-                      {action && (
-                        <div className="flex items-center gap-2 cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" className="w-4 h-4">
-                            <path d="M11.9999 13.1714L16.9497 8.22168L18.3639 9.63589L11.9999 15.9999L5.63599 9.63589L7.0502 8.22168L11.9999 13.1714Z"></path>
-                          </svg>
-                          <span className="text-sm font-normal text-white">Action</span>
-                        </div>
-                      )}
-                      {content && (
-                        <div className="flex items-center gap-2 cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" className="w-4 h-4">
-                            <path d="M11.9999 13.1714L16.9497 8.22168L18.3639 9.63589L11.9999 15.9999L5.63599 9.63589L7.0502 8.22168L11.9999 13.1714Z"></path>
-                          </svg>
-                          <span className="text-sm font-normal text-white">Input</span>
-                        </div>
-                      )}
-                      {isExpanded && (
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ duration: 0.3 }}
-                          className="mt-2"
-                        >
-                          {action && <div className="text-sm text-white">{action}</div>}
-                          {content && <div className="text-sm text-white">{content}</div>}
-                        </motion.div>
-                      )}
-                    </div>
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.3 }}
+                        className="mt-2"
+                      >
+                        {action && (
+                          <div className="text-sm text-white">{action}</div>
+                        )}
+                        {content && (
+                          <div className="text-sm text-white">{content}</div>
+                        )}
+                      </motion.div>
+                    )}
                   </motion.div>
                 )
               )}
