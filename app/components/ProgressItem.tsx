@@ -71,18 +71,18 @@ export const ProgressItem: React.FC<
         whileHover={{
           boxShadow:
             type === "NEXT"
-              ? "0 0 6px 2px rgba(189, 255, 138, 0.5)"
+              ? "0 0 6px 2px rgba(189, 255, 138, 0.7)"
               : type === "ANSWER"
-              ? "0 0 6px 2px rgba(156, 149, 255, 0.5)"
-              : "0 0 6px 2px rgba(197, 241, 255, 0.5)",
+              ? "0 0 6px 2px rgba(156, 149, 255, 0.7)"
+              : "0 0 6px 2px rgba(197, 241, 255, 0.7)",
         }}
         animate={{
           boxShadow: isHovered
             ? type === "NEXT"
-              ? "0 0 6px 2px rgba(189, 255, 138, 0.5)"
+              ? "0 0 6px 2px rgba(189, 255, 138, 0.7)"
               : type === "ANSWER"
-              ? "0 0 6px 2px rgba(156, 149, 255, 0.5)"
-              : "0 0 6px 2px rgba(197, 241, 255, 0.5)"
+              ? "0 0 6px 2px rgba(156, 149, 255, 0.7)"
+              : "0 0 6px 2px rgba(197, 241, 255, 0.7)"
             : "none",
           height: "auto",
           maxHeight: isHovered ? "200px" : "auto",

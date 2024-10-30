@@ -207,7 +207,7 @@ const Chat: React.FC<ChatProps> = ({
                       isCurrent={index === generations.length - 1}
                       isHovered={hoveredGenerationId === index}
                       content={
-                        <div className="space-y-1 mt-2 mb-5 font-jakarta">
+                        <div className="space-y-1 mt-0 mb-0 font-jakarta">
                           {thoughtObj.thought && (
                             <p className="text-xs  text-[#979797]">
                               {thoughtObj.thought.startsWith(
@@ -232,7 +232,7 @@ const Chat: React.FC<ChatProps> = ({
                             <ExpandableSection
                               title="Action"
                               content={
-                                <p className="text-md text-white mt-2 font-ibm">
+                                <p className="text-md text-white  font-ibm">
                                   {thoughtObj.action}
                                 </p>
                               }
@@ -244,7 +244,7 @@ const Chat: React.FC<ChatProps> = ({
                             <ExpandableSection
                               title="Input"
                               content={
-                                <p className="text-md text-white mt-2 font-ibm">
+                                <p className="text-md text-white  font-ibm">
                                   {thoughtObj.input}
                                 </p>
                               }

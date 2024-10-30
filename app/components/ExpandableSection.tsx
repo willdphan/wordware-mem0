@@ -22,6 +22,10 @@ export const ExpandableSection: React.FC<{
 }) => {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
+  const toggleExpanded = () => {
+    setIsExpanded(!isExpanded);
+  };
+
   const getCircleLetter = (type: string) => {
     if (!type) return null;
     const firstLetter = type.charAt(0).toUpperCase();
@@ -49,13 +53,16 @@ export const ExpandableSection: React.FC<{
           className={`w-7 h-7 rounded-full bg-[#20201E] flex items-center justify-center text-xs font-medium ${textColor}
             ${isCurrent ? "animate-pulse-shadow" : ""}`}
           animate={
-            isHovered ? { 
-              boxShadow: firstLetter === "N"
-                ? "0 0 6px 2px rgba(189, 255, 138, 0.5)"
-                : firstLetter === "A"
-                ? "0 0 6px 2px rgba(156, 149, 255, 0.5)"
-                : "0 0 6px 2px rgba(197, 241, 255, 0.5)"
-            } : {}
+            isHovered
+              ? {
+                  boxShadow:
+                    firstLetter === "N"
+                      ? "0 0 6px 2px rgba(189, 255, 138, 0.5)"
+                      : firstLetter === "A"
+                      ? "0 0 6px 2px rgba(156, 149, 255, 0.5)"
+                      : "0 0 6px 2px rgba(197, 241, 255, 0.5)",
+                }
+              : {}
           }
         >
           {firstLetter}
@@ -73,9 +80,10 @@ export const ExpandableSection: React.FC<{
         </div>
       )}
       <div className={`flex-grow ${isNested ? "pl-4" : ""}`}>
-        <div
-          className="flex items-center cursor-pointer rounded-md p-2 hover:bg-[#FDFAF5] transition-colors duration-200"
-          onClick={() => setIsExpanded(!isExpanded)}
+        <button
+          onClick={toggleExpanded}
+          className={`w-full text-left flex items-center bg-[#252522] p-3 rounded-md
+            ${isNested ? "text-sm text-[#969696]" : "text-md text-white"}`}
         >
           <span className="mr-2 w-4 h-4 flex-shrink-0">
             {isExpanded ? (
@@ -97,13 +105,13 @@ export const ExpandableSection: React.FC<{
             )}
           </span>
           <p className="text-sm font-normal text-white">{title}</p>
-        </div>
+        </button>
         {isExpanded && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
-            className="mt-2 text-[#538E28]"
+            className="mt-0 text-[#538E28] bg-[#252522] p-3 rounded-md"
           >
             {content}
           </motion.div>
