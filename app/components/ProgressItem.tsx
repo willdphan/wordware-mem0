@@ -106,7 +106,7 @@ export const ProgressItem: React.FC<
               {getIcon()}
             </span>
             <div className="flex flex-col flex-grow min-w-0 w-full">
-              <div className="uppercase text-md font-medium font-ibm break-words">
+              <div className="uppercase text-md font-normal font-ibm break-words">
                 {label}
               </div>
               <AnimatePresence mode="wait">
@@ -119,7 +119,7 @@ export const ProgressItem: React.FC<
                       duration: 0.3,
                       ease: [0.04, 0.62, 0.23, 0.98],
                     }}
-                    className="text-sm text-wrap text-[#828282] overflow-y-auto overflow-x-hidden pr-2 custom-scrollbar max-h-[120px]"
+                    className="text-sm text-wrap text-[#828282] overflow-y-auto overflow-x-hidden pr-2 custom-scrollbar max-h-[120px] font-jakarta"
                   >
                     {(() => {
                       try {
