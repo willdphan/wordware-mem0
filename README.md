@@ -1,4 +1,4 @@
-# wordware-crypto-react
+# wordware-mem0
 
 NEXT_PUBLIC_WORDWARE_API_KEY
 NEXT_PUBLIC_CLAUDE_API_KEY
