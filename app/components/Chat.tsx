@@ -151,8 +151,8 @@ const Chat: React.FC<ChatProps> = ({
   }, []);
 
   return (
-    <div className="flex flex-col h-screen bg-[#20201E]">
-      <div className="flex-grow overflow-auto p-6 ">
+    <div className="flex flex-col h-screen bg-[#20201E] p-2">
+      <div className="flex-grow overflow-auto p-6">
         <div className="max-w-4xl mx-auto ">
           <h3 className="text-sm border-b-[1px] border-[#969696] mx-0 md:mx-3 pb-4 text-[#538E28] mb-3 mt-8 md:mt-0">
             <span className="uppercase text-[#457522] ">APP ID:</span>{" "}
@@ -283,7 +283,7 @@ const Chat: React.FC<ChatProps> = ({
                       key={suggestion}
                       type="button"
                       onClick={() => setQuestion(suggestion)}
-                      className="px-3 py-1 text-sm text-white bg-[#F6F4EE] rounded-full hover:text-white hover:bg-[#548E28] transition-colors"
+                      className="px-3 py-1 text-sm text-black bg-[#F6F4EE] rounded-sm hover:bg-gradient-to-br hover:from-[#E4FEA5] hover:via-[#C5F1FF] hover:to-[#D1D1FE] transition-colors"
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ duration: 0.2, delay: index * 0.1 }}
@@ -298,7 +298,7 @@ const Chat: React.FC<ChatProps> = ({
                   e.preventDefault();
                   handleSubmit();
                 }}
-                className="flex items-center space-x-4 mt-4"
+                className="flex items-center space-x-2 mt-2"
               >
                 <textarea
                   id="question"

@@ -1,30 +1,34 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
-export const ExpandableSection: React.FC<{
+interface ExpandableSectionProps {
   title: string;
-  content: React.ReactNode;
+  content?: React.ReactNode;
+  description?: string;
   isNested?: boolean;
   generationType?: string;
   isLast?: boolean;
   defaultExpanded?: boolean;
   isCurrent?: boolean;
   isHovered?: boolean;
-}> = ({
+  isLoading?: boolean;
+  action?: string;
+}
+
+export const ExpandableSection = ({
   title,
   content,
+  description,
   isNested = false,
   generationType = "",
   isLast = false,
   defaultExpanded = true,
   isCurrent = false,
   isHovered = false,
-}) => {
+  isLoading = false,
+  action,
+}: ExpandableSectionProps) => {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
-
-  const toggleExpanded = () => {
-    setIsExpanded(!isExpanded);
-  };
 
   const getCircleLetter = (type: string) => {
     if (!type) return null;
@@ -80,42 +84,86 @@ export const ExpandableSection: React.FC<{
         </div>
       )}
       <div className={`flex-grow ${isNested ? "pl-4" : ""}`}>
-        <button
-          onClick={toggleExpanded}
-          className={`w-full text-left flex items-center bg-[#252522] p-3 rounded-md
-            ${isNested ? "text-sm text-[#969696]" : "text-md text-white"}`}
-        >
-          <span className="mr-2 w-4 h-4 flex-shrink-0">
-            {isExpanded ? (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="white"
-              >
-                <path d="M11.9999 13.1714L16.9497 8.22168L18.3639 9.63589L11.9999 15.9999L5.63599 9.63589L7.0502 8.22168L11.9999 13.1714Z"></path>
-              </svg>
-            ) : (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="white"
-              >
-                <path d="M13.1717 12.0007L8.22192 7.05093L9.63614 5.63672L16.0001 12.0007L9.63614 18.3646L8.22192 16.9504L13.1717 12.0007Z"></path>
-              </svg>
-            )}
-          </span>
-          <p className="text-sm font-normal text-white">{title}</p>
-        </button>
-        {isExpanded && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
-            className="mt-0 text-[#538E28] bg-[#252522] p-3 rounded-md"
-          >
-            {content}
-          </motion.div>
-        )}
+        <div className="flex flex-col gap-2">
+          {/* Main container that wraps both title and content */}
+          <div className="bg-[#252522] p-3 rounded-md inline-block">
+            {/* Title and description */}
+            <div className="flex flex-col mb-2">
+              <span className="text-sm font-normal text-white lowercase">{title}</span>
+              {description && (
+                <p className="text-sm text-[#969696]">{description}</p>
+              )}
+            </div>
+
+            <AnimatePresence mode="wait">
+              {isLoading ? (
+                <motion.div
+                  key="loading"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="flex flex-col gap-4"
+                >
+                  {/* Loading animation */}
+                  <div className="flex items-center justify-center font-Space uppercase text-sm text-[#6A6A72]">
+                    <div className="animate-pulse">[generating visual]</div>
+                  </div>
+                  
+                  {/* Dimmed placeholders */}
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 bg-[#6A6A72] rounded-sm opacity-50" />
+                      <span className="text-sm text-[#6A6A72]">Action</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 bg-[#6A6A72] rounded-sm opacity-50" />
+                      <span className="text-sm text-[#6A6A72]">Input</span>
+                    </div>
+                  </div>
+                </motion.div>
+              ) : (
+                (action || content) && (
+                  <motion.div
+                    key="content"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                  >
+                    <div className="flex flex-col gap-2">
+                      {action && (
+                        <div className="flex items-center gap-2 cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" className="w-4 h-4">
+                            <path d="M11.9999 13.1714L16.9497 8.22168L18.3639 9.63589L11.9999 15.9999L5.63599 9.63589L7.0502 8.22168L11.9999 13.1714Z"></path>
+                          </svg>
+                          <span className="text-sm font-normal text-white">Action</span>
+                        </div>
+                      )}
+                      {content && (
+                        <div className="flex items-center gap-2 cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" className="w-4 h-4">
+                            <path d="M11.9999 13.1714L16.9497 8.22168L18.3639 9.63589L11.9999 15.9999L5.63599 9.63589L7.0502 8.22168L11.9999 13.1714Z"></path>
+                          </svg>
+                          <span className="text-sm font-normal text-white">Input</span>
+                        </div>
+                      )}
+                      {isExpanded && (
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ duration: 0.3 }}
+                          className="mt-2"
+                        >
+                          {action && <div className="text-sm text-white">{action}</div>}
+                          {content && <div className="text-sm text-white">{content}</div>}
+                        </motion.div>
+                      )}
+                    </div>
+                  </motion.div>
+                )
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
       </div>
     </div>
   );
