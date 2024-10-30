@@ -49,7 +49,13 @@ export const ExpandableSection: React.FC<{
           className={`w-7 h-7 rounded-full bg-[#20201E] flex items-center justify-center text-xs font-medium ${textColor}
             ${isCurrent ? "animate-pulse-shadow" : ""}`}
           animate={
-            isHovered ? { boxShadow: "0 0 6px 2px rgba(84, 142, 40, 0.5)" } : {}
+            isHovered ? { 
+              boxShadow: firstLetter === "N"
+                ? "0 0 6px 2px rgba(189, 255, 138, 0.5)"
+                : firstLetter === "A"
+                ? "0 0 6px 2px rgba(156, 149, 255, 0.5)"
+                : "0 0 6px 2px rgba(197, 241, 255, 0.5)"
+            } : {}
           }
         >
           {firstLetter}
