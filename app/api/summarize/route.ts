@@ -25,7 +25,7 @@ export async function POST(req: Request) {
       messages: [
         {
           role: "user",
-          content: `Summarize the following text in 5 words or less. You must analyze the context of the text and provide what action you took (as the llm agent) YOU MUST NOT PROVIDE ANY OTHER TEXT OR USE ANY OTHER BACKGROUN INFORMATION. The information is about crypto coins and markets. We are using the coin gecko api. USE BELOW:
+          content: `Summarize the following text in 5 words or less. You must analyze the context of the text and provide what action you took (as the llm agent) YOU MUST NOT PROVIDE ANY OTHER TEXT OR USE ANY OTHER BACKGROUND INFORMATION. The information is about crypto coins and markets. We are using the coin gecko api. USE BELOW:
           
           \n\n${description}\n\n:`,
         },

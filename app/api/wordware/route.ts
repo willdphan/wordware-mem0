@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const WORDWARE_API_URL = "https://app.wordware.ai/api/released-app/3db7ccbe-a884-4894-9540-c17a2fb43509/run";
-const NEXT_PUBLIC_WORDWARE_API_KEY = "ww-EsIQ14sOBkneVI3km8HZnQ8b72kz4A4fsVc5Gukbz5vmWleUwRNzOr";
+const WORDWARE_API_URL =
+  "https://app.wordware.ai/api/released-app/3db7ccbe-a884-4894-9540-c17a2fb43509/run";
+const NEXT_PUBLIC_WORDWARE_API_KEY =
+  "ww-EsIQ14sOBkneVI3km8HZnQ8b72kz4A4fsVc5Gukbz5vmWleUwRNzOr";
 
 export async function POST(request: NextRequest) {
   try {
