@@ -59,7 +59,7 @@ export default function Home() {
               setHoveredGenerationId={setHoveredGenerationId}
             />
           </section>
-          <section className="w-full md:w-1/2 h-full overflow-y-auto border-l-[1px] border-[#969696] ">
+          <section className="w-full md:w-1/2 h-full overflow-y-auto  border-[#969696] ">
             <Chat
               generations={generations}
               setGenerations={setGenerations}
