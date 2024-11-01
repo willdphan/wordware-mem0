@@ -77,20 +77,22 @@ export const ProgressItem: React.FC<
       <motion.div
         className="px-7 py-7 text-md flex flex-col bg-[#efeeeb] text-black min-h-[100px] rounded-md w-[300px] "
         whileHover={{
+          backgroundColor: "#e0dfdc",
           boxShadow:
             type === "NEXT"
-              ? "0 0 6px 2px rgba(189, 255, 138, 0.5)"
+              ? "0 0 6px 2px rgba(189, 255, 138, 0.2)"
               : type === "ANSWER"
-              ? "0 0 6px 2px rgba(156, 149, 255, 0.5)"
-              : "0 0 6px 2px rgba(197, 241, 255, 0.5)",
+              ? "0 0 6px 2px rgba(156, 149, 255, 0.2)"
+              : "0 0 6px 2px rgba(197, 241, 255, 0.2)",
         }}
         animate={{
+          backgroundColor: isHovered ? "#e0dfdc" : "#efeeeb",
           boxShadow: isHovered
             ? type === "NEXT"
-              ? "0 0 6px 2px rgba(189, 255, 138, 0.5)"
+              ? "0 0 6px 2px rgba(189, 255, 138, 0.2)"
               : type === "ANSWER"
-              ? "0 0 6px 2px rgba(156, 149, 255, 0.5)"
-              : "0 0 6px 2px rgba(197, 241, 255, 0.5)"
+              ? "0 0 6px 2px rgba(156, 149, 255, 0.2)"
+              : "0 0 6px 2px rgba(197, 241, 255, 0.2)"
             : "none",
           height: "auto",
           maxHeight: isHovered ? "200px" : "auto",
