@@ -294,19 +294,28 @@ const Chat: React.FC<ChatProps> = ({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
                 >
-                  {suggestions.map((suggestion, index) => (
-                    <motion.button
-                      key={suggestion}
-                      type="button"
-                      onClick={() => setQuestion(suggestion)}
-                      className="px-3 py-1 text-sm text-black bg-[#F6F4EE] rounded-sm hover:bg-gradient-to-br hover:from-[#E4FEA5] hover:via-[#C5F1FF] hover:to-[#D1D1FE] transition-colors"
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.2, delay: index * 0.1 }}
-                    >
-                      {suggestion}
-                    </motion.button>
-                  ))}
+                  {suggestions.map((suggestion, index) => {
+                    const hoverColors = [
+                      "hover:bg-[#857AEC]", // purple
+                      "hover:bg-[#C2F4FF]", // blue
+                      "hover:bg-[#E4FEA5]", // green
+                    ];
+                    const hoverColor = hoverColors[index % 3];
+
+                    return (
+                      <motion.button
+                        key={suggestion}
+                        type="button"
+                        onClick={() => setQuestion(suggestion)}
+                        className={`px-3 py-1 text-sm text-white bg-[#252522] rounded-sm ${hoverColor} hover:text-black transition-colors`}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.2, delay: index * 0.1 }}
+                      >
+                        {suggestion}
+                      </motion.button>
+                    );
+                  })}
                 </motion.div>
               </div>
               <form
@@ -320,7 +329,7 @@ const Chat: React.FC<ChatProps> = ({
                   id="question"
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
-                  className="flex-grow border-[#969696] rounded-md border-[1px] py-3 px-3 focus:ring focus:ring-[#538E28] focus:ring-opacity-50 placeholder:text-sm placeholder:text-[#969696] text-white text-sm bg-[#20201E]"
+                  className="flex-grow border-[#373732] rounded-md border-[2px] py-3 px-3 focus:ring  focus:ring-opacity-50 placeholder:text-sm placeholder:text-[#969696] text-white text-sm bg-[#20201E]"
                   rows={1}
                   placeholder="Type your message here..."
                   required
@@ -328,7 +337,7 @@ const Chat: React.FC<ChatProps> = ({
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="px-4 py-3 rounded-md font-ibm text-md text-white bg-black hover:bg-[#E6FFA2] hover:text-black focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center justify-center min-w-[100px] transition-colors duration-200"
+                  className="px-4 py-3 rounded-md font-ibm text-md text-white bg-[#252522] hover:bg-[#E6FFA2] hover:text-black focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center justify-center min-w-[100px] transition-colors duration-200"
                 >
                   {isLoading ? <LoadingSpinner /> : "Submit"}
                 </button>
