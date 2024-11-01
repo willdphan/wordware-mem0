@@ -39,15 +39,15 @@ export const ExpandableSection = ({
     let textColor = "";
     if (firstLetter === "N") {
       borderStyle =
-        "border-2 border-transparent bg-clip-padding p-[1px] bg-gradient-to-b from-[#BDFF8A] to-[#54713E]";
+        "border-2 border-transparent bg-clip-padding p-[1px] bg-[#BDFF8A]";
       textColor = "text-[#BDFF8A]";
     } else if (firstLetter === "A") {
       borderStyle =
-        "border-2 border-transparent bg-clip-padding p-[1px] bg-gradient-to-b from-[#9C95FF] to-[#4A477A]";
+        "border-2 border-transparent bg-clip-padding p-[1px] bg-[#9C95FF]";
       textColor = "text-[#9C95FF]";
     } else if (firstLetter === "H") {
       borderStyle =
-        "border-2 border-transparent bg-clip-padding p-[1px] bg-gradient-to-b from-[#C5F1FF] to-[#53686F]";
+        "border-2 border-transparent bg-clip-padding p-[1px] bg-[#C5F1FF]";
       textColor = "text-[#C5F1FF]";
     }
 
