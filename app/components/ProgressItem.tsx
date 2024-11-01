@@ -75,18 +75,10 @@ export const ProgressItem: React.FC<
       onMouseLeave={() => onHover(-1)}
     >
       <motion.div
-        className="px-7 py-7 text-md flex flex-col bg-[#efeeeb] text-black min-h-[100px] rounded-md w-[300px] "
-        whileHover={{
-          backgroundColor: "#e0dfdc",
-          boxShadow:
-            type === "NEXT"
-              ? "0 0 6px 2px rgba(189, 255, 138, 0.2)"
-              : type === "ANSWER"
-              ? "0 0 6px 2px rgba(156, 149, 255, 0.2)"
-              : "0 0 6px 2px rgba(197, 241, 255, 0.2)",
-        }}
+        className="px-7 py-7 text-md flex flex-col bg-[#efeeeb] text-black rounded-md w-[300px]"
         animate={{
           backgroundColor: isHovered ? "#e0dfdc" : "#efeeeb",
+          height: isHovered ? 120 : 100,
           boxShadow: isHovered
             ? type === "NEXT"
               ? "0 0 6px 2px rgba(189, 255, 138, 0.2)"
@@ -94,20 +86,17 @@ export const ProgressItem: React.FC<
               ? "0 0 6px 2px rgba(156, 149, 255, 0.2)"
               : "0 0 6px 2px rgba(197, 241, 255, 0.2)"
             : "none",
-          height: "auto",
-          maxHeight: isHovered ? "200px" : "auto",
           transition: {
             height: {
-              type: "spring",
-              stiffness: 150,
-              damping: 20,
-              mass: 0.5,
+              duration: 0.3,
+              ease: [0.4, 0, 0.2, 1],
             },
+            backgroundColor: { duration: 0.3 },
+            boxShadow: { duration: 0.3 },
           },
         }}
         style={{
-          overflow: "auto", // Changed from conditional to always auto
-          height: "fit-content",
+          overflow: "hidden",
         }}
       >
         <div className="flex items-start w-full">
@@ -127,17 +116,18 @@ export const ProgressItem: React.FC<
               <div className="uppercase text-md font-normal font-ibm break-words">
                 {label}
               </div>
-              <AnimatePresence mode="wait">
+              <AnimatePresence>
                 {isHovered ? (
                   <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
+                    key="expanded"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
                     transition={{
                       duration: 0.3,
-                      ease: [0.04, 0.62, 0.23, 0.98],
+                      ease: "easeInOut",
                     }}
-                    className="text-sm text-wrap text-[#9A9A9A] overflow-y-auto overflow-x-hidden pr-2 custom-scrollbar max-h-[120px] font-jakarta"
+                    className="text-xs  text-wrap text-[#9A9A9A] overflow-y-auto overflow-x-hidden pr-2 custom-scrollbar max-h-[120px] font-jakarta"
                   >
                     {(() => {
                       try {
@@ -150,9 +140,11 @@ export const ProgressItem: React.FC<
                   </motion.div>
                 ) : (
                   <motion.div
-                    initial={{ opacity: 1, height: "auto" }}
+                    key="collapsed"
+                    initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    exit={{ opacity: 0, height: 0 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.15 }}
                     className="text-xs font-jakarta text-wrap text-[#828282]"
                   >
                     {isSummarized && summarizedDescription
