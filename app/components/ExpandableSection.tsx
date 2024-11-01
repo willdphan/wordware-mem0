@@ -75,38 +75,36 @@ export const ExpandableSection = ({
     );
   };
 
+  // For "next" type expandables
+  const thinkingTitles = [
+    "Hold on, I'm thinking...",
+    "Creating a plan...",
+    "Planning next steps...",
+    "Working on it!",
+  ];
+
+  // For "answer" type expandables
+  const answerTitles = [
+    "I got the answer!",
+    "Found it!",
+    "Here's what I found!",
+  ];
+
+  // For "html" or code-related expandables
+  const codeTitles = [
+    "Generating code...",
+    "Whipping up code...",
+    "Writing some code...",
+  ];
+
   const getExpandableTitle = (type: string) => {
-    // For "next" type expandables
-    const thinkingTitles = [
-      "Hold on, I'm thinking...",
-      "Creating a plan...",
-      "Planning next steps...",
-      "Working on it!",
-    ];
-
-    // For "answer" type expandables
-    const answerTitles = [
-      "I got the answer!",
-      "Found it!",
-      "Here's what I found!",
-    ];
-
-    // For "html" or code-related expandables
-    const codeTitles = [
-      "Generating code...",
-      "Whipping up code...",
-      "Writing some code...",
-    ];
-
     switch (type) {
       case "next":
-        return thinkingTitles[
-          Math.floor(Math.random() * thinkingTitles.length)
-        ];
+        return thinkingTitles[0]; // "Thinking..."
       case "answer":
-        return answerTitles[Math.floor(Math.random() * answerTitles.length)];
+        return answerTitles[0]; // "Answer"
       case "html":
-        return codeTitles[Math.floor(Math.random() * codeTitles.length)];
+        return codeTitles[0]; // "Generated Code"
       default:
         return type;
     }

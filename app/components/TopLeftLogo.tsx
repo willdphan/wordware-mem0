@@ -13,8 +13,8 @@ export function TopLeftLogo() {
         <Image
           src="/wordware.png"
           alt="WordWare Logo"
-          width={120}
-          height={40}
+          width={200}
+          height={120}
           className="object-contain"
         />
       </div>
@@ -27,13 +27,13 @@ export function TopLeftLogo() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3, delay: 2.5 }}
-      className="absolute top-3 left-5 z-[99]"
+      className="absolute top-[-2em] left-3 z-[99]"
     >
       <Image
         src="/wordware.png"
         alt="WordWare Logo"
-        width={120}
-        height={40}
+        width={200}
+        height={120}
         className="object-contain"
       />
     </motion.div>
