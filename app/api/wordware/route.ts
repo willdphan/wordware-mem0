@@ -1,22 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
+// handles receiving the Wordware API response and forwards the raw stream to the client
 
 const WORDWARE_API_URL =
-  "https://app.wordware.ai/api/released-app/3db7ccbe-a884-4894-9540-c17a2fb43509/run";
+  "https://api.wordware.ai/v1alpha/apps/wordware/feed4bf1-8f93-4118-a6f8-083f07ea30e9/runs/stream";
 const NEXT_PUBLIC_WORDWARE_API_KEY =
-  "ww-EsIQ14sOBkneVI3km8HZnQ8b72kz4A4fsVc5Gukbz5vmWleUwRNzOr";
+  "ww-LJz6yoDVqeUzAJCuF5apTdQBnzdYqEMpztjjHfVhb5iGozVxajuNsT";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { inputs, version } = body;
-
-    if (!NEXT_PUBLIC_WORDWARE_API_KEY) {
-      console.error("NEXT_PUBLIC_WORDWARE_API_KEY is not set");
-      return NextResponse.json(
-        { error: "API key is not set" },
-        { status: 500 }
-      );
-    }
+    const { inputs } = body;
 
     const response = await fetch(WORDWARE_API_URL, {
       method: "POST",
@@ -26,13 +19,11 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify({
         inputs: { question: inputs.question },
-        version: version || "^3.4",
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Wordware API error:", errorText);
       return NextResponse.json(
         {
           error: `Wordware API responded with status ${response.status}: ${errorText}`,
@@ -41,35 +32,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create a new ReadableStream to forward the response
+    // Transform the response into a readable stream
     const stream = new ReadableStream({
       async start(controller) {
         const reader = response.body?.getReader();
-        if (!reader) {
-          throw new Error("Response body is null");
-        }
-        const decoder = new TextDecoder();
-        let buffer = "";
+        if (!reader) throw new Error("Response body is null");
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
 
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-
-          for (let i = 0; i < lines.length - 1; i++) {
-            const line = lines[i].trim();
-            if (line) {
-              controller.enqueue(line + "\n");
-            }
+            // Forward the raw chunks directly to the client
+            controller.enqueue(value);
           }
-
-          buffer = lines[lines.length - 1];
-        }
-
-        if (buffer) {
-          controller.enqueue(buffer);
+        } catch (e) {
+          console.error("Stream processing error:", e);
+          controller.error(e);
         }
 
         controller.close();

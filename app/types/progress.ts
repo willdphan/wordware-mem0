@@ -18,7 +18,9 @@ export interface SummarizedGeneration extends Generation {
 
 export interface ChatProps {
   generations: Generation[];
-  setGenerations: (generations: Generation[] | ((prev: Generation[]) => Generation[])) => void;
+  setGenerations: (
+    generations: Generation[] | ((prev: Generation[]) => Generation[])
+  ) => void;
   hoveredGenerationId: number;
   setHoveredGenerationId: (id: number) => void;
 }

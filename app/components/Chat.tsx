@@ -39,115 +39,86 @@ const Chat: React.FC<ChatProps> = ({
   );
 
   const handleSubmit = async () => {
-    setIsLoading(true);
-    updateGenerations([]); // Reset generations at the start of a new query
+    if (isLoading) return;
+
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
 
     abortControllerRef.current = new AbortController();
+    setIsLoading(true);
+    updateGenerations([]);
+
+    console.log("Submitting question:", question); // Debug log
 
     try {
       const res = await fetch("/api/wordware", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          inputs: { question },
-          version: "^3.4",
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ inputs: { question } }),
         signal: abortControllerRef.current.signal,
       });
 
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      console.log("Got response from API"); // Debug log
 
       const reader = res.body!.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
+      let currentContent = "";
 
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done) {
+          console.log("Stream complete"); // Debug log
+          break;
+        }
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
+        buffer += decoder.decode(value);
+        const events = buffer.split("\n\n");
+        buffer = events.pop() || "";
 
-        for (let i = 0; i < lines.length - 1; i++) {
-          const line = lines[i].trim();
-          if (line) {
+        for (const event of events) {
+          const lines = event.split("\n");
+          const dataLines = lines
+            .filter((line) => line.startsWith("data: "))
+            .map((line) => line.slice(6));
+
+          if (dataLines.length > 0) {
             try {
-              const content = JSON.parse(line);
-              const value = content.value;
+              const data = JSON.parse(dataLines.join(""));
+              if (data.content) {
+                currentContent += data.content;
+                updateGenerations((prev) => {
+                  const newGenerations = [...prev];
+                  if (newGenerations.length === 0) {
+                    newGenerations.push({
+                      label: "RESPONSE",
+                      thought: currentContent,
+                      action: "",
+                      input: "",
+                      observation: "",
 
-              if (value && typeof value === "object") {
-                if (value.type === "generation") {
-                  if (value.state === "start") {
-                    console.log("New generation:", value);
-                    updateGenerations((prev) => [
-                      ...prev,
-                      {
-                        label: value.label || "",
-                        thought: value.thought || "",
-                        action: value.action || "",
-                        input: value.input || "",
-                      },
-                    ]);
-                  } else if (value.state === "end") {
-                    updateGenerations((prev) =>
-                      prev.map((gen, index) =>
-                        index === prev.length - 1
-                          ? { ...gen, isCompleted: true }
-                          : gen
-                      )
-                    );
+                      isCompleted: false,
+                    });
+                  } else {
+                    newGenerations[newGenerations.length - 1].thought =
+                      currentContent;
                   }
-                } else if (value.type === "chunk") {
-                  updateGenerations((prev) =>
-                    prev.map((gen, index) =>
-                      index === prev.length - 1
-                        ? {
-                            ...gen,
-                            thought: gen.thought + (value.value ?? ""),
-                            action: gen.action || value.action || "",
-                            input: gen.input || value.input || "",
-                          }
-                        : gen
-                    )
-                  );
-                }
-              } else if (value.type === "chunk") {
-                updateGenerations((prev) =>
-                  prev.map((gen, index) =>
-                    index === prev.length - 1
-                      ? {
-                          ...gen,
-                          thought: gen.thought + (value.value ?? ""),
-                          action: gen.action || value.action || "",
-                          input: gen.input || value.input || "",
-                        }
-                      : gen
-                  )
-                );
+                  return newGenerations;
+                });
               }
-            } catch (error) {
-              console.error("Error parsing chunk:", error);
+            } catch (e) {
+              // Ignore parsing errors for incomplete chunks
             }
           }
         }
-
-        buffer = lines[lines.length - 1];
       }
     } catch (error) {
-      if (error instanceof Error && error.name === "AbortError") {
-        console.log("Fetch aborted");
-      } else {
-        console.error("Error:", error);
-        setQuestion(
-          "An error occurred while fetching the response. Are API keys set?"
-        );
-      }
+      console.error("Request error:", error); // Debug error
     } finally {
       setIsLoading(false);
+      setQuestion("");
     }
   };
 
@@ -192,17 +163,6 @@ const Chat: React.FC<ChatProps> = ({
           </h3>
           <div className="p-0 rounded-md">
             {generations.map((generation, index) => {
-              let thoughtObj;
-              try {
-                thoughtObj = JSON.parse(generation.thought || "{}");
-              } catch {
-                thoughtObj = {
-                  thought: generation.thought || "",
-                  action: generation.action || "",
-                  input: generation.input || "",
-                };
-              }
-
               return (
                 <div
                   key={index}
@@ -223,49 +183,66 @@ const Chat: React.FC<ChatProps> = ({
                       isCurrent={index === generations.length - 1}
                       isHovered={hoveredGenerationId === index}
                       content={
-                        <div className="space-y-1 mt-0 mb-0 font-jakarta ">
-                          {thoughtObj.thought && (
-                            <p className="text-xs  text-[#979797] ">
-                              {thoughtObj.thought.startsWith(
-                                "<!DOCTYPE html"
-                              ) ? (
-                                <a
-                                  href={`data:text/html;charset=utf-8,${encodeURIComponent(
-                                    thoughtObj.thought
-                                  )}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-[#C2F4FF] hover:underline"
-                                >
-                                  View Generated HTML Page
-                                </a>
-                              ) : (
-                                thoughtObj.thought
-                              )}
-                            </p>
-                          )}
-                          {thoughtObj.action && (
+                        <div className="space-y-1 mt-0 mb-0 font-jakarta">
+                          {generation.thought && (
                             <ExpandableSection
-                              title="Action"
+                              title="Thought"
                               content={
-                                <p className="text-md text-[#969696] font-jakarta ">
-                                  {thoughtObj.action}
+                                <p className="text-xs text-[#979797]">
+                                  {generation.thought}
                                 </p>
                               }
                               isNested
-                              defaultExpanded={false}
+                              defaultExpanded={true}
                             />
                           )}
-                          {thoughtObj.input && (
+                          {generation.action && (
+                            <ExpandableSection
+                              title="Action"
+                              content={
+                                <p className="text-md text-[#969696] font-jakarta">
+                                  {generation.action}
+                                </p>
+                              }
+                              isNested
+                              defaultExpanded={true}
+                            />
+                          )}
+                          {generation.input && (
                             <ExpandableSection
                               title="Input"
                               content={
                                 <p className="text-md text-[#969696] font-jakarta">
-                                  {thoughtObj.input}
+                                  {generation.input}
                                 </p>
                               }
                               isNested
-                              defaultExpanded={false}
+                              defaultExpanded={true}
+                            />
+                          )}
+                          {generation.observation && (
+                            <ExpandableSection
+                              title="Observation"
+                              content={
+                                <p className="text-md text-[#969696] font-jakarta">
+                                  {generation.observation}
+                                </p>
+                              }
+                              isNested
+                              defaultExpanded={true}
+                            />
+                          )}
+
+                          {generation.finalAnswer && (
+                            <ExpandableSection
+                              title="Final Answer"
+                              content={
+                                <p className="text-md text-[#969696] font-jakarta">
+                                  {generation.finalAnswer}
+                                </p>
+                              }
+                              isNested
+                              defaultExpanded={true}
                             />
                           )}
                           {generation.isCompleted && (

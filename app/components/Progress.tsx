@@ -31,7 +31,7 @@ const mapGenerationToItem = (
   description: gen.thought,
   isHighlighted: index === length - 1 && !gen.isCompleted,
   isLast: index === length - 1,
-  type: gen.label.toUpperCase() as "NEXT" | "ANSWER" | "HTML" | "OTHER",
+  type: (gen.label || "OTHER").toUpperCase() as "NEXT" | "ANSWER" | "HTML" | "OTHER",
   action: gen.action,
 });
 
@@ -197,5 +197,4 @@ const Progress: React.FC<ProgressProps> = ({
     </div>
   );
 };
-
 export default Progress;
