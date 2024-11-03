@@ -110,102 +110,82 @@ const Chat: React.FC<ChatProps> = ({
               ) {
                 const content = data.content?.trim() || "";
 
-                // Helper function to create a new generation with a single field
-                function createMarkerGeneration(
-                  marker: string,
-                  content: string
-                ): Generation {
-                  const newGen = createEmptyGeneration(allGenerations.length);
-                  const cleanContent = content.replace(marker + ":", "").trim();
-
-                  switch (marker.toLowerCase()) {
-                    case "thought":
-                      newGen.thought = cleanContent;
-                      break;
-                    case "action":
-                      newGen.action = cleanContent;
-                      break;
-                    case "input":
-                      newGen.input = cleanContent;
-                      break;
-                    case "observation":
-                      newGen.observation = cleanContent;
-                      break;
-                    case "final answer":
-                      newGen.finalAnswer = cleanContent;
-                      newGen.isCompleted = true;
-                      break;
-                    default:
-                      throw new Error(`Unknown marker: ${marker}`);
-                  }
-                  return newGen;
+                // Add this helper function
+                function isNewMarker(content: string) {
+                  const markers = [
+                    "Thought:",
+                    "Action:",
+                    "Input:",
+                    "Observation:",
+                    "Final Answer:",
+                  ];
+                  return markers.some((marker) =>
+                    content.trim().startsWith(marker)
+                  );
                 }
 
-                // Create new generation for ANY marker word
-                if (
-                  content.startsWith("Thought:") ||
-                  content.startsWith("Action:") ||
-                  content.startsWith("Input:") ||
-                  content.startsWith("Observation:") ||
-                  content.startsWith("Final Answer:")
-                ) {
-                  // Save current generation if it has content
+                // Create new generation when we see a marker
+                if (isNewMarker(content)) {
+                  // Save previous generation if it has content
                   if (
                     currentGeneration.thought ||
                     currentGeneration.steps.length > 0 ||
                     currentGeneration.finalAnswer
                   ) {
-                    allGenerations.push({ ...currentGeneration });
+                    allGenerations = [
+                      ...allGenerations,
+                      { ...currentGeneration },
+                    ];
                     currentGeneration = createEmptyGeneration(
                       allGenerations.length
                     );
                   }
 
-                  // Set the appropriate field based on the marker
-                  if (content.startsWith("Thought:")) {
-                    currentGeneration.thought = content
-                      .replace("Thought:", "")
-                      .trim();
-                  } else if (content.startsWith("Action:")) {
-                    currentGeneration.steps.push({
-                      action: content.replace("Action:", "").trim(),
-                    });
-                  } else if (content.startsWith("Input:")) {
-                    currentGeneration.steps.push({
-                      input: content.replace("Input:", "").trim(),
-                    });
-                  } else if (content.startsWith("Observation:")) {
-                    currentGeneration.steps.push({
-                      observation: content.replace("Observation:", "").trim(),
-                    });
-                  } else if (content.startsWith("Final Answer:")) {
-                    currentGeneration.finalAnswer = content
-                      .replace("Final Answer:", "")
-                      .trim();
-                    currentGeneration.isCompleted = true;
+                  // Set the content based on marker type
+                  const [marker, ...contentParts] = content.split(":");
+                  const cleanContent = contentParts.join(":").trim();
+
+                  switch (marker.toLowerCase()) {
+                    case "thought":
+                      currentGeneration.thought = cleanContent;
+                      break;
+                    case "action":
+                      currentGeneration.steps.push({ action: cleanContent });
+                      break;
+                    case "input":
+                      currentGeneration.steps.push({ input: cleanContent });
+                      break;
+                    case "observation":
+                      currentGeneration.steps.push({
+                        observation: cleanContent,
+                      });
+                      break;
+                    case "final answer":
+                      currentGeneration.finalAnswer = cleanContent;
+                      currentGeneration.isCompleted = true;
+                      break;
                   }
                 } else {
-                  // Append to the last appropriate field
+                  // Append to existing content
+                  const lastStep =
+                    currentGeneration.steps[currentGeneration.steps.length - 1];
                   if (currentGeneration.finalAnswer) {
                     currentGeneration.finalAnswer += " " + content;
-                  } else if (currentGeneration.steps.length > 0) {
-                    const currentStep =
-                      currentGeneration.steps[
-                        currentGeneration.steps.length - 1
-                      ];
-                    if (currentStep.observation)
-                      currentStep.observation += " " + content;
-                    else if (currentStep.input)
-                      currentStep.input += " " + content;
-                    else if (currentStep.action)
-                      currentStep.action += " " + content;
+                  } else if (lastStep) {
+                    if (lastStep.observation)
+                      lastStep.observation += " " + content;
+                    else if (lastStep.input) lastStep.input += " " + content;
+                    else if (lastStep.action) lastStep.action += " " + content;
                   } else if (currentGeneration.thought) {
                     currentGeneration.thought += " " + content;
                   }
                 }
 
-                // Always update generations with current state
-                updateGenerations([...allGenerations, currentGeneration]);
+                // Update the state with all generations
+                updateGenerations([
+                  ...allGenerations,
+                  { ...currentGeneration },
+                ]);
               }
             }
           } catch (e) {

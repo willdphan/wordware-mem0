@@ -1,8 +1,10 @@
 export interface Generation {
+  id: string;
   label: string;
   thought: string;
-  isCompleted?: boolean;
-  action: string; // Add this line
+  steps: Array<Step>;
+  finalAnswer: string;
+  isCompleted: boolean;
 }
 
 export interface ProgressProps {
@@ -45,4 +47,9 @@ export interface ProgressItemProps {
   action?: string;
   summarizedDescription?: string;
   isSummarized: boolean;
+}
+
+interface Step {
+  type: 'action' | 'input' | 'observation';
+  content: string;
 }
