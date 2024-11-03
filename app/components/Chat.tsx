@@ -51,9 +51,8 @@ const Chat: React.FC<ChatProps> = ({
     // Start fresh
     setGenerations([]);
 
-    let currentGenId = 0;
-    let currentGeneration = createEmptyGeneration(currentGenId);
-    let accumulatedContent = "";
+    let currentGeneration = createEmptyGeneration(0);
+    let allGenerations: Generation[] = [];
 
     function createEmptyGeneration(id: number): Generation {
       return {
@@ -113,24 +112,43 @@ const Chat: React.FC<ChatProps> = ({
               ) {
                 const content = data.content?.trim() || "";
 
-                // Start a new generation for each major section
+                // Start a new generation when we detect a new section
                 if (
-                  content.startsWith("Thought:") &&
-                  currentGeneration.thought
+                  (content.startsWith("Thought:") && currentGeneration.thought) ||
+                  (content.startsWith("Action:") && currentGeneration.action) ||
+                  (content.startsWith("Input:") && currentGeneration.input) ||
+                  (content.startsWith("Observation:") && currentGeneration.observation) ||
+                  (content.startsWith("Final Answer:") && currentGeneration.finalAnswer)
                 ) {
-                  generations.push({
-                    ...currentGeneration,
-                  });
-                  currentGeneration = createEmptyGeneration(generations.length);
+                  // Save the completed generation
+                  allGenerations.push({ ...currentGeneration });
+                  // Create new generation
+                  currentGeneration = createEmptyGeneration(allGenerations.length);
                 }
 
-                // Update the current generation base
-                currentGeneration.thought += content;
-                updateGenerations([currentGeneration]);
-              } else if (data.type === "structured_chunk" && data.content) {
-                // Handle structured chunks if needed
-                currentGeneration.thought += data.content;
-                updateGenerations([currentGeneration]);
+                // Update the appropriate field in current generation
+                if (content.startsWith("Thought:")) {
+                  currentGeneration.thought = content.replace("Thought:", "").trim();
+                } else if (content.startsWith("Action:")) {
+                  currentGeneration.action = content.replace("Action:", "").trim();
+                } else if (content.startsWith("Input:")) {
+                  currentGeneration.input = content.replace("Input:", "").trim();
+                } else if (content.startsWith("Observation:")) {
+                  currentGeneration.observation = content.replace("Observation:", "").trim();
+                } else if (content.startsWith("Final Answer:")) {
+                  currentGeneration.finalAnswer = content.replace("Final Answer:", "").trim();
+                  currentGeneration.isCompleted = true;
+                } else {
+                  // Append to the last non-empty field
+                  if (currentGeneration.finalAnswer) currentGeneration.finalAnswer += " " + content;
+                  else if (currentGeneration.observation) currentGeneration.observation += " " + content;
+                  else if (currentGeneration.input) currentGeneration.input += " " + content;
+                  else if (currentGeneration.action) currentGeneration.action += " " + content;
+                  else if (currentGeneration.thought) currentGeneration.thought += " " + content;
+                }
+
+                // Update generations with all previous generations plus current
+                updateGenerations([...allGenerations, currentGeneration]);
               }
             }
           } catch (e) {
