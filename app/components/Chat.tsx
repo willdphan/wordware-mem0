@@ -59,9 +59,7 @@ const Chat: React.FC<ChatProps> = ({
         id: String(id),
         label: "RESPONSE",
         thought: "",
-        action: "",
-        input: "",
-        observation: "",
+        steps: [],
         finalAnswer: "",
         isCompleted: false,
       };
@@ -112,42 +110,101 @@ const Chat: React.FC<ChatProps> = ({
               ) {
                 const content = data.content?.trim() || "";
 
-                // Start a new generation when we detect a new section
+                // Helper function to create a new generation with a single field
+                function createMarkerGeneration(
+                  marker: string,
+                  content: string
+                ): Generation {
+                  const newGen = createEmptyGeneration(allGenerations.length);
+                  const cleanContent = content.replace(marker + ":", "").trim();
+
+                  switch (marker.toLowerCase()) {
+                    case "thought":
+                      newGen.thought = cleanContent;
+                      break;
+                    case "action":
+                      newGen.action = cleanContent;
+                      break;
+                    case "input":
+                      newGen.input = cleanContent;
+                      break;
+                    case "observation":
+                      newGen.observation = cleanContent;
+                      break;
+                    case "final answer":
+                      newGen.finalAnswer = cleanContent;
+                      newGen.isCompleted = true;
+                      break;
+                    default:
+                      throw new Error(`Unknown marker: ${marker}`);
+                  }
+                  return newGen;
+                }
+
+                // Create new generation for ANY marker word
                 if (
-                  (content.startsWith("Thought:") && currentGeneration.thought) ||
-                  (content.startsWith("Action:") && currentGeneration.action) ||
-                  (content.startsWith("Input:") && currentGeneration.input) ||
-                  (content.startsWith("Observation:") && currentGeneration.observation) ||
-                  (content.startsWith("Final Answer:") && currentGeneration.finalAnswer)
+                  content.startsWith("Thought:") ||
+                  content.startsWith("Action:") ||
+                  content.startsWith("Input:") ||
+                  content.startsWith("Observation:") ||
+                  content.startsWith("Final Answer:")
                 ) {
-                  // Save the completed generation
-                  allGenerations.push({ ...currentGeneration });
-                  // Create new generation
-                  currentGeneration = createEmptyGeneration(allGenerations.length);
-                }
+                  // Save current generation if it has content
+                  if (
+                    currentGeneration.thought ||
+                    currentGeneration.steps.length > 0 ||
+                    currentGeneration.finalAnswer
+                  ) {
+                    allGenerations.push({ ...currentGeneration });
+                    currentGeneration = createEmptyGeneration(
+                      allGenerations.length
+                    );
+                  }
 
-                // Update the appropriate field in current generation
-                if (content.startsWith("Thought:")) {
-                  currentGeneration.thought = content.replace("Thought:", "").trim();
-                } else if (content.startsWith("Action:")) {
-                  currentGeneration.action = content.replace("Action:", "").trim();
-                } else if (content.startsWith("Input:")) {
-                  currentGeneration.input = content.replace("Input:", "").trim();
-                } else if (content.startsWith("Observation:")) {
-                  currentGeneration.observation = content.replace("Observation:", "").trim();
-                } else if (content.startsWith("Final Answer:")) {
-                  currentGeneration.finalAnswer = content.replace("Final Answer:", "").trim();
-                  currentGeneration.isCompleted = true;
+                  // Set the appropriate field based on the marker
+                  if (content.startsWith("Thought:")) {
+                    currentGeneration.thought = content
+                      .replace("Thought:", "")
+                      .trim();
+                  } else if (content.startsWith("Action:")) {
+                    currentGeneration.steps.push({
+                      action: content.replace("Action:", "").trim(),
+                    });
+                  } else if (content.startsWith("Input:")) {
+                    currentGeneration.steps.push({
+                      input: content.replace("Input:", "").trim(),
+                    });
+                  } else if (content.startsWith("Observation:")) {
+                    currentGeneration.steps.push({
+                      observation: content.replace("Observation:", "").trim(),
+                    });
+                  } else if (content.startsWith("Final Answer:")) {
+                    currentGeneration.finalAnswer = content
+                      .replace("Final Answer:", "")
+                      .trim();
+                    currentGeneration.isCompleted = true;
+                  }
                 } else {
-                  // Append to the last non-empty field
-                  if (currentGeneration.finalAnswer) currentGeneration.finalAnswer += " " + content;
-                  else if (currentGeneration.observation) currentGeneration.observation += " " + content;
-                  else if (currentGeneration.input) currentGeneration.input += " " + content;
-                  else if (currentGeneration.action) currentGeneration.action += " " + content;
-                  else if (currentGeneration.thought) currentGeneration.thought += " " + content;
+                  // Append to the last appropriate field
+                  if (currentGeneration.finalAnswer) {
+                    currentGeneration.finalAnswer += " " + content;
+                  } else if (currentGeneration.steps.length > 0) {
+                    const currentStep =
+                      currentGeneration.steps[
+                        currentGeneration.steps.length - 1
+                      ];
+                    if (currentStep.observation)
+                      currentStep.observation += " " + content;
+                    else if (currentStep.input)
+                      currentStep.input += " " + content;
+                    else if (currentStep.action)
+                      currentStep.action += " " + content;
+                  } else if (currentGeneration.thought) {
+                    currentGeneration.thought += " " + content;
+                  }
                 }
 
-                // Update generations with all previous generations plus current
+                // Always update generations with current state
                 updateGenerations([...allGenerations, currentGeneration]);
               }
             }
@@ -238,43 +295,46 @@ const Chat: React.FC<ChatProps> = ({
                               defaultExpanded={true}
                             />
                           )}
-                          {generation.action && (
-                            <ExpandableSection
-                              title="Action"
-                              content={
-                                <p className="text-md text-[#969696] font-jakarta">
-                                  {generation.action}
-                                </p>
-                              }
-                              isNested
-                              defaultExpanded={true}
-                            />
-                          )}
-                          {generation.input && (
-                            <ExpandableSection
-                              title="Input"
-                              content={
-                                <p className="text-md text-[#969696] font-jakarta">
-                                  {generation.input}
-                                </p>
-                              }
-                              isNested
-                              defaultExpanded={true}
-                            />
-                          )}
-                          {generation.observation && (
-                            <ExpandableSection
-                              title="Observation"
-                              content={
-                                <p className="text-md text-[#969696] font-jakarta">
-                                  {generation.observation}
-                                </p>
-                              }
-                              isNested
-                              defaultExpanded={true}
-                            />
-                          )}
-
+                          {generation.steps.map((step, stepIndex) => (
+                            <div key={stepIndex}>
+                              {step.action && (
+                                <ExpandableSection
+                                  title="Action"
+                                  content={
+                                    <p className="text-md text-[#969696] font-jakarta">
+                                      {step.action}
+                                    </p>
+                                  }
+                                  isNested
+                                  defaultExpanded={true}
+                                />
+                              )}
+                              {step.input && (
+                                <ExpandableSection
+                                  title="Input"
+                                  content={
+                                    <p className="text-md text-[#969696] font-jakarta">
+                                      {step.input}
+                                    </p>
+                                  }
+                                  isNested
+                                  defaultExpanded={true}
+                                />
+                              )}
+                              {step.observation && (
+                                <ExpandableSection
+                                  title="Observation"
+                                  content={
+                                    <p className="text-md text-[#969696] font-jakarta">
+                                      {step.observation}
+                                    </p>
+                                  }
+                                  isNested
+                                  defaultExpanded={true}
+                                />
+                              )}
+                            </div>
+                          ))}
                           {generation.finalAnswer && (
                             <ExpandableSection
                               title="Final Answer"
