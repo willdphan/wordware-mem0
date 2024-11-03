@@ -1,13 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect} from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ProgressItem } from "./ProgressItem";
-import {
-  Generation,
-  ProgressProps,
-  SummarizedGeneration,
-} from "../types/progress";
+import { Generation, ProgressProps } from "../types/progress";
 
 // Constants
 const VISIBLE_ITEMS = 3;
@@ -31,7 +27,11 @@ const mapGenerationToItem = (
   description: gen.thought,
   isHighlighted: index === length - 1 && !gen.isCompleted,
   isLast: index === length - 1,
-  type: (gen.label || "OTHER").toUpperCase() as "NEXT" | "ANSWER" | "HTML" | "OTHER",
+  type: (gen.label || "OTHER").toUpperCase() as
+    | "NEXT"
+    | "ANSWER"
+    | "HTML"
+    | "OTHER",
   action: gen.action,
 });
 
@@ -42,9 +42,6 @@ const Progress: React.FC<ProgressProps> = ({
 }) => {
   // State declarations
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [summarizedGenerations, setSummarizedGenerations] = useState<
-    SummarizedGeneration[]
-  >([]);
   const nodeRefs = React.useRef<(HTMLDivElement | null)[]>([]);
 
   // Derived values
@@ -61,29 +58,6 @@ const Progress: React.FC<ProgressProps> = ({
   );
 
   // Callbacks
-  const summarizeDescription = useCallback(async (description: string) => {
-    if (!description) {
-      console.error("Empty description provided for summarization");
-      return "No description available";
-    }
-
-    try {
-      const response = await fetch("/api/summarize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ description }),
-      });
-
-      if (!response.ok)
-        throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
-      return data.summary || description;
-    } catch (error) {
-      console.error("Error summarizing description:", error);
-      return description;
-    }
-  }, []);
-
   const handleHover = (index: number) => {
     setHoveredGenerationId(currentIndex + index);
   };
@@ -104,28 +78,6 @@ const Progress: React.FC<ProgressProps> = ({
       setCurrentIndex(generations.length - 3);
     }
   }, [generations.length]);
-
-  useEffect(() => {
-    const latestGeneration = generations[generations.length - 1];
-    if (!latestGeneration?.thought) return;
-
-    const isAlreadySummarized = summarizedGenerations.some(
-      (g) => g.label === latestGeneration.label
-    );
-
-    if (!isAlreadySummarized) {
-      summarizeDescription(latestGeneration.thought).then((summary) => {
-        setSummarizedGenerations((prev) => [
-          ...prev,
-          {
-            ...latestGeneration,
-            summarizedDescription: summary,
-            isSummarized: true,
-          },
-        ]);
-      });
-    }
-  }, [generations, summarizeDescription, summarizedGenerations]);
 
   useEffect(() => {
     if (hoveredGenerationId >= 0) {
@@ -181,14 +133,7 @@ const Progress: React.FC<ProgressProps> = ({
                 index={index}
                 type={item.type}
                 action={item.action}
-                summarizedDescription={
-                  summarizedGenerations.find((g) => g.label === item.label)
-                    ?.summarizedDescription
-                }
-                isSummarized={
-                  summarizedGenerations.find((g) => g.label === item.label)
-                    ?.isSummarized || false
-                }
+                isSummarized={false}
               />
             </motion.div>
           ))}

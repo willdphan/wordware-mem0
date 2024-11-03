@@ -47,75 +47,99 @@ const Chat: React.FC<ChatProps> = ({
 
     abortControllerRef.current = new AbortController();
     setIsLoading(true);
-    updateGenerations([]);
 
-    console.log("Submitting question:", question); // Debug log
+    // Start fresh
+    setGenerations([]);
+
+    let currentGenId = 0;
+    let currentGeneration = createEmptyGeneration(currentGenId);
+    let accumulatedContent = "";
+
+    function createEmptyGeneration(id: number): Generation {
+      return {
+        id: String(id),
+        label: "RESPONSE",
+        thought: "",
+        action: "",
+        input: "",
+        observation: "",
+        finalAnswer: "",
+        isCompleted: false,
+      };
+    }
 
     try {
       const res = await fetch("/api/wordware", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Connection: "keep-alive",
+        },
         body: JSON.stringify({ inputs: { question } }),
         signal: abortControllerRef.current.signal,
+        keepalive: true,
       });
 
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-      console.log("Got response from API"); // Debug log
 
       const reader = res.body!.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      let currentContent = "";
+      let currentData = "";
 
       while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-          console.log("Stream complete"); // Debug log
-          break;
-        }
+        const { value, done } = await reader.read();
+        if (done) break;
 
-        buffer += decoder.decode(value);
-        const events = buffer.split("\n\n");
-        buffer = events.pop() || "";
+        const chunk = new TextDecoder().decode(value);
+        currentData += chunk;
+
+        const events = currentData.split("\n\nevent: ");
+        currentData = events.pop() || "";
 
         for (const event of events) {
-          const lines = event.split("\n");
-          const dataLines = lines
+          const jsonStr = event
+            .split("\n")
             .filter((line) => line.startsWith("data: "))
-            .map((line) => line.slice(6));
+            .map((line) => line.replace("data: ", ""))
+            .join("");
 
-          if (dataLines.length > 0) {
-            try {
-              const data = JSON.parse(dataLines.join(""));
-              if (data.content) {
-                currentContent += data.content;
-                updateGenerations((prev) => {
-                  const newGenerations = [...prev];
-                  if (newGenerations.length === 0) {
-                    newGenerations.push({
-                      label: "RESPONSE",
-                      thought: currentContent,
-                      action: "",
-                      input: "",
-                      observation: "",
+          try {
+            if (jsonStr) {
+              const data = JSON.parse(jsonStr);
+              console.log("Parsed data:", data);
 
-                      isCompleted: false,
-                    });
-                  } else {
-                    newGenerations[newGenerations.length - 1].thought =
-                      currentContent;
-                  }
-                  return newGenerations;
-                });
+              if (
+                data.type === "chunk" &&
+                data.path === "loop (new)[0].answer"
+              ) {
+                const content = data.content?.trim() || "";
+
+                // Start a new generation for each major section
+                if (
+                  content.startsWith("Thought:") &&
+                  currentGeneration.thought
+                ) {
+                  generations.push({
+                    ...currentGeneration,
+                  });
+                  currentGeneration = createEmptyGeneration(generations.length);
+                }
+
+                // Update the current generation base
+                currentGeneration.thought += content;
+                updateGenerations([currentGeneration]);
+              } else if (data.type === "structured_chunk" && data.content) {
+                // Handle structured chunks if needed
+                currentGeneration.thought += data.content;
+                updateGenerations([currentGeneration]);
               }
-            } catch (e) {
-              // Ignore parsing errors for incomplete chunks
             }
+          } catch (e) {
+            console.error("Parse error:", e, "Raw JSON:", jsonStr);
           }
         }
       }
     } catch (error) {
-      console.error("Request error:", error); // Debug error
+      console.error("Request error:", error);
     } finally {
       setIsLoading(false);
       setQuestion("");
