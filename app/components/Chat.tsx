@@ -38,6 +38,26 @@ const Chat: React.FC<ChatProps> = ({
     [setGenerations]
   );
 
+  function isNewMarker(content: string): boolean {
+    const markers = [
+      "Thought:",
+      "Action:",
+      "Input:",
+      "Observation:",
+      "Summary:",
+      "Final answer:",
+    ];
+    
+    // Trim and normalize the content
+    const normalizedContent = content.trim();
+    
+    // Check if content starts with any marker
+    return markers.some(marker => 
+      normalizedContent.startsWith(marker) || 
+      normalizedContent.includes(`\n${marker}`)
+    );
+  }
+
   const handleSubmit = async () => {
     if (isLoading) return;
 
@@ -54,6 +74,7 @@ const Chat: React.FC<ChatProps> = ({
     let currentGeneration = createEmptyGeneration(0);
     let allGenerations: Generation[] = [];
     let accumulatedContent = "";
+    let completeResponse = "";
 
     function createEmptyGeneration(id: number): Generation {
       return {
@@ -85,7 +106,10 @@ const Chat: React.FC<ChatProps> = ({
 
       while (true) {
         const { value, done } = await reader.read();
-        if (done) break;
+        if (done) {
+          console.log("Complete Response:", completeResponse);
+          break;
+        }
 
         const chunk = new TextDecoder().decode(value);
         currentData += chunk;
@@ -108,85 +132,73 @@ const Chat: React.FC<ChatProps> = ({
 
             if (data.type === "chunk" && data.path === "loop (new)[0].answer") {
               const content = data.content?.trim() || "";
+              completeResponse += content;
+              console.log("Current complete response:", completeResponse);
+            }
 
-              // Add this helper function
-              function isNewMarker(content: string) {
-                const markers = [
-                  "Thought:",
-                  "Action:",
-                  "Input:",
-                  "Observation:",
-                  "Final Answer:",
-                  "Summary:",
-                ];
+            if (data.type === "chunk" && data.path === "loop (new)[0].answer") {
+              const content = data.content?.trim() || "";
 
-                // Trim and normalize the content
-                const normalizedContent = content.trim().replace(/\n+/g, "\n");
+              // Split content by newlines and process each line
+              const lines = content.split("\n");
+              for (const line of lines) {
+                if (isNewMarker(line)) {
+                  // Handle accumulated content before starting new section
+                  if (accumulatedContent) {
+                    if (currentGeneration.steps.length > 0) {
+                      const lastStep = currentGeneration.steps[currentGeneration.steps.length - 1];
+                      const lastStepType = Object.keys(lastStep)[0];
+                      currentGeneration.steps[currentGeneration.steps.length - 1] = {
+                        [lastStepType]: lastStep[lastStepType] + accumulatedContent
+                      };
+                    } else if (currentGeneration.thought) {
+                      currentGeneration.thought += accumulatedContent;
+                    }
+                    accumulatedContent = "";
+                  }
 
-                // Check if content starts with any marker
-                return markers.some(
-                  (marker) =>
-                    normalizedContent.startsWith(marker) ||
-                    normalizedContent.includes(`\n${marker}`)
-                );
-              }
+                  const [marker, ...contentParts] = line.split(":");
+                  const markerContent = contentParts.join(":").trim();
+                  const markerType = marker.trim().toLowerCase();
 
-              if (isNewMarker(content)) {
-                // Handle accumulated content before starting new section
-                if (accumulatedContent) {
+                  switch (markerType) {
+                    case "thought":
+                      if (currentGeneration.thought || currentGeneration.steps.length > 0) {
+                        allGenerations = [...allGenerations, { ...currentGeneration }];
+                        currentGeneration = createEmptyGeneration(allGenerations.length);
+                      }
+                      currentGeneration.thought = markerContent;
+                      break;
+                    case "action":
+                    case "input":
+                    case "observation":
+                    case "summary":
+                      currentGeneration.steps.push({
+                        [markerType]: markerContent
+                      });
+                      break;
+                    case "final answer":
+                      currentGeneration.finalAnswer = markerContent;
+                      currentGeneration.isCompleted = true;
+                      break;
+                  }
+                } else {
+                  // Accumulate non-marker content
                   if (currentGeneration.steps.length > 0) {
                     const lastStep = currentGeneration.steps[currentGeneration.steps.length - 1];
                     const lastStepType = Object.keys(lastStep)[0];
-                    currentGeneration.steps[currentGeneration.steps.length - 1] = {
-                      [lastStepType]: lastStep[lastStepType] + accumulatedContent
-                    };
+                    lastStep[lastStepType] += line;
+                    console.log(`Adding to ${lastStepType}:`, line);
                   } else if (currentGeneration.finalAnswer) {
-                    currentGeneration.finalAnswer += accumulatedContent;
+                    currentGeneration.finalAnswer += line;
+                    console.log("Adding to finalAnswer:", line);
                   } else if (currentGeneration.thought) {
-                    currentGeneration.thought += accumulatedContent;
+                    currentGeneration.thought += line;
+                    console.log("Adding to thought:", line);
+                  } else {
+                    accumulatedContent += line;
+                    console.log("Accumulating content:", accumulatedContent);
                   }
-                  accumulatedContent = "";
-                }
-
-                const lines = content.split("\n");
-                const markerLine = lines.find((line) => isNewMarker(line)) || lines[0];
-                const [marker, ...contentParts] = markerLine.split(":");
-                const markerContent = contentParts.join(":").trim();
-                const remainingContent = lines.slice(1).join("\n").trim();
-                const markerType = marker.trim().toLowerCase();
-
-                switch (markerType) {
-                  case "thought":
-                    if (currentGeneration.thought || currentGeneration.steps.length > 0) {
-                      allGenerations = [...allGenerations, { ...currentGeneration }];
-                      currentGeneration = createEmptyGeneration(allGenerations.length);
-                    }
-                    currentGeneration.thought = markerContent + (remainingContent ? "\n" + remainingContent : "");
-                    break;
-                  case "action":
-                  case "input":
-                  case "observation":
-                    currentGeneration.steps.push({
-                      [markerType]: markerContent + (remainingContent ? "\n" + remainingContent : "")
-                    });
-                    break;
-                  case "final answer":
-                    currentGeneration.finalAnswer = markerContent + (remainingContent ? "\n" + remainingContent : "");
-                    currentGeneration.isCompleted = true;
-                    break;
-                }
-              } else {
-                // Handle content accumulation
-                if (currentGeneration.steps.length > 0) {
-                  const lastStep = currentGeneration.steps[currentGeneration.steps.length - 1];
-                  const lastStepType = Object.keys(lastStep)[0];
-                  lastStep[lastStepType] += content;
-                } else if (currentGeneration.finalAnswer) {
-                  currentGeneration.finalAnswer += content;
-                } else if (currentGeneration.thought) {
-                  currentGeneration.thought += content;
-                } else {
-                  accumulatedContent += content;
                 }
               }
 
@@ -200,7 +212,9 @@ const Chat: React.FC<ChatProps> = ({
       }
     } catch (error) {
       console.error("Request error:", error);
+      console.log("Final complete response:", completeResponse);
     } finally {
+      console.log("Final complete response:", completeResponse);
       setIsLoading(false);
       setQuestion("");
     }
