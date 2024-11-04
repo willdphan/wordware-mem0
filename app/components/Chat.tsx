@@ -45,17 +45,22 @@ const Chat: React.FC<ChatProps> = ({
       "Input:",
       "Observation:",
       "Summary:",
+      "Final Answer:",
+      "FinalAnswer:",
       "Final answer:",
     ];
-    
+
     // Trim and normalize the content
     const normalizedContent = content.trim();
-    
-    // Check if content starts with any marker
-    return markers.some(marker => 
-      normalizedContent.startsWith(marker) || 
-      normalizedContent.includes(`\n${marker}`)
-    );
+
+    // Check if content starts with any marker, case insensitive
+    return markers.some((marker) => {
+      const normalizedMarker = marker.toLowerCase();
+      return (
+        normalizedContent.toLowerCase().startsWith(normalizedMarker) ||
+        normalizedContent.toLowerCase().includes(`\n${normalizedMarker}`)
+      );
+    });
   }
 
   const handleSubmit = async () => {
@@ -157,52 +162,64 @@ const Chat: React.FC<ChatProps> = ({
                     accumulatedContent = "";
                   }
 
-                  const [marker, ...contentParts] = line.split(":");
-                  const markerContent = contentParts.join(":").trim();
-                  const markerType = marker.trim().toLowerCase();
+                  // Split the line into marker and content, preserving the entire content after the marker
+                  const markerMatch = line.match(/^(.*?):\s*(.*)/);
+                  if (markerMatch) {
+                    const [, marker, markerContent] = markerMatch;
+                    const markerType = marker.trim().toLowerCase();
 
-                  switch (markerType) {
-                    case "thought":
-                      if (currentGeneration.thought || currentGeneration.steps.length > 0) {
-                        allGenerations = [...allGenerations, { ...currentGeneration }];
-                        currentGeneration = createEmptyGeneration(allGenerations.length);
-                      }
-                      currentGeneration.thought = markerContent;
-                      break;
-                    case "action":
-                    case "input":
-                    case "observation":
-                    case "summary":
-                      currentGeneration.steps.push({
-                        [markerType]: markerContent
-                      });
-                      break;
-                    case "final answer":
-                      currentGeneration.finalAnswer = markerContent;
-                      currentGeneration.isCompleted = true;
-                      break;
+                    switch (markerType) {
+                      case "thought":
+                        if (currentGeneration.thought || currentGeneration.steps.length > 0) {
+                          allGenerations = [...allGenerations, { ...currentGeneration }];
+                          currentGeneration = createEmptyGeneration(allGenerations.length);
+                        }
+                        currentGeneration.thought = markerContent;
+                        break;
+                      case "action":
+                      case "input":
+                      case "observation":
+                        if (markerContent.trim().toLowerCase() !== 'done') {
+                          currentGeneration.steps.push({
+                            [markerType]: markerContent
+                          });
+                        }
+                        break;
+                      case "final answer":
+                      case "finalanswer":
+                      case "final answer":
+                        if (currentGeneration.finalAnswer) {
+                          allGenerations = [...allGenerations, { ...currentGeneration }];
+                          currentGeneration = createEmptyGeneration(allGenerations.length);
+                        }
+                        currentGeneration.finalAnswer = markerContent;
+                        currentGeneration.isCompleted = true;
+                        break;
+                      default:
+                        if (markerContent.trim().toLowerCase() !== 'done') {
+                          currentGeneration.steps.push({
+                            [markerType]: markerContent
+                          });
+                        }
+                    }
                   }
                 } else {
-                  // Accumulate non-marker content
-                  if (currentGeneration.steps.length > 0) {
+                  // Add non-marker content to the appropriate section
+                  if (currentGeneration.finalAnswer) {
+                    currentGeneration.finalAnswer += "\n" + line;
+                  } else if (currentGeneration.steps.length > 0) {
                     const lastStep = currentGeneration.steps[currentGeneration.steps.length - 1];
                     const lastStepType = Object.keys(lastStep)[0];
-                    lastStep[lastStepType] += line;
-                    console.log(`Adding to ${lastStepType}:`, line);
-                  } else if (currentGeneration.finalAnswer) {
-                    currentGeneration.finalAnswer += line;
-                    console.log("Adding to finalAnswer:", line);
+                    lastStep[lastStepType] += "\n" + line;
                   } else if (currentGeneration.thought) {
-                    currentGeneration.thought += line;
-                    console.log("Adding to thought:", line);
+                    currentGeneration.thought += "\n" + line;
                   } else {
-                    accumulatedContent += line;
-                    console.log("Accumulating content:", accumulatedContent);
+                    accumulatedContent += "\n" + line;
                   }
                 }
               }
 
-              // Always update generations after any content change
+              // Update generations after processing content
               updateGenerations([...allGenerations, { ...currentGeneration }]);
             }
           } catch (parseError) {
