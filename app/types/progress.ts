@@ -1,3 +1,5 @@
+import { ColorMapping } from "./colors";
+
 interface Generation {
   id: string;
   label: string;
@@ -10,6 +12,7 @@ interface Generation {
   }>;
   finalAnswer: string;
   isCompleted: boolean;
+  type: "D" | "R" | "S" | "G" | string;
 }
 
 interface ChatProps {
@@ -30,4 +33,17 @@ interface ParsedResult {
   actions: Action[];
   finalAnswer: string;
   searchResults?: string;
+}
+
+export interface ProgressItemProps {
+  label: string;
+  description: string;
+  isHovered: boolean;
+  onHover: (index: number) => void;
+  index: number;
+  type: string;
+  action?: string;
+  colorMap?: ColorMapping;
+  isHighlighted?: boolean;
+  isLast?: boolean;
 }

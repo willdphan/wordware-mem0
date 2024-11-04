@@ -13,41 +13,95 @@ interface ExpandableSectionProps {
   isHovered?: boolean;
   isLoading?: boolean;
   action?: string;
+  onHover?: (isHovered: boolean) => void;
+  isHighlighted?: boolean;
 }
 
-export const ExpandableSection = ({
+type ColorMapKey = "D" | "R" | "S" | "G" | "default";
+
+const glowColorMap: Record<ColorMapKey, string> = {
+  D: "rgba(189, 255, 138, 0.5)", // #BDFF8A
+  R: "rgba(156, 149, 255, 0.5)", // #9C95FF
+  S: "rgba(197, 241, 255, 0.5)", // #C5F1FF
+  G: "rgba(255, 138, 138, 0.5)", // #FF8A8A
+  default: "rgba(106, 106, 114, 0.5)", // #6A6A72
+};
+
+export const ExpandableSection: React.FC<ExpandableSectionProps> = ({
   title,
   content,
   description,
   isNested = false,
   generationType = "",
   isLast = false,
-  defaultExpanded = true,
+  defaultExpanded = false,
   isCurrent = false,
   isHovered = false,
   isLoading = false,
   action,
-}: ExpandableSectionProps) => {
-  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+  onHover,
+  isHighlighted,
+}) => {
+  const [isExpanded, setIsExpanded] = useState(() => {
+    if (typeof title === "string") {
+      const lowerTitle = title.toLowerCase();
+      // Keep these sections closed by default
+      if (
+        lowerTitle.includes("action") ||
+        lowerTitle.includes("input") ||
+        lowerTitle.includes("observation") ||
+        lowerTitle.includes("answer") ||
+        lowerTitle.includes("code") ||
+        lowerTitle.includes("summary")
+      ) {
+        return false;
+      }
+    }
+    return defaultExpanded;
+  });
 
   const getCircleLetter = (type: string) => {
     if (!type) return null;
+    // Get the first letter of the generation type
     const firstLetter = type.charAt(0).toUpperCase();
 
     // Define default style for any letter
-    let borderStyle = "border-2 border-transparent bg-clip-padding p-[1px] bg-[#6A6A72]";
+    let borderStyle =
+      "border-2 border-transparent bg-clip-padding p-[1px] bg-[#6A6A72]";
     let textColor = "text-[#6A6A72]";
 
-    // Override styles for specific letters
-    if (firstLetter === "N") {
-      borderStyle = "border-2 border-transparent bg-clip-padding p-[1px] bg-[#BDFF8A]";
-      textColor = "text-[#BDFF8A]";
-    } else if (firstLetter === "A") {
-      borderStyle = "border-2 border-transparent bg-clip-padding p-[1px] bg-[#9C95FF]";
-      textColor = "text-[#9C95FF]";
-    } else if (firstLetter === "H") {
-      borderStyle = "border-2 border-transparent bg-clip-padding p-[1px] bg-[#C5F1FF]";
-      textColor = "text-[#C5F1FF]";
+    // Map generation types to their respective colors
+    const colorMap: Record<string, { border: string; text: string }> = {
+      D: {
+        // done
+        border:
+          "border-2 border-transparent bg-clip-padding p-[1px] bg-[#BDFF8A]",
+        text: "text-[#BDFF8A]",
+      },
+      R: {
+        // runcode
+        border:
+          "border-2 border-transparent bg-clip-padding p-[1px] bg-[#9C95FF]",
+        text: "text-[#9C95FF]",
+      },
+      S: {
+        // save
+        border:
+          "border-2 border-transparent bg-clip-padding p-[1px] bg-[#C5F1FF]",
+        text: "text-[#C5F1FF]",
+      },
+      G: {
+        // Google search
+        border:
+          "border-2 border-transparent bg-clip-padding p-[1px] bg-[#FF8A8A]",
+        text: "text-[#FF8A8A]",
+      },
+    };
+
+    // If the letter exists in our map, use those styles
+    if (colorMap[firstLetter]) {
+      borderStyle = colorMap[firstLetter].border;
+      textColor = colorMap[firstLetter].text;
     }
 
     return (
@@ -58,14 +112,10 @@ export const ExpandableSection = ({
           animate={
             isHovered
               ? {
-                  boxShadow:
-                    firstLetter === "N"
-                      ? "0 0 6px 2px rgba(189, 255, 138, 0.5)"
-                      : firstLetter === "A"
-                      ? "0 0 6px 2px rgba(156, 149, 255, 0.5)"
-                      : firstLetter === "H"
-                      ? "0 0 6px 2px rgba(197, 241, 255, 0.5)"
-                      : "0 0 6px 2px rgba(106, 106, 114, 0.5)", // Default glow for other letters
+                  boxShadow: `0 0 6px 2px ${
+                    glowColorMap[(firstLetter as ColorMapKey) || "default"] ||
+                    glowColorMap.default
+                  }`,
                 }
               : {}
           }
@@ -112,7 +162,11 @@ export const ExpandableSection = ({
   };
 
   return (
-    <div className={`${isNested ? "mb-1 ml-6" : "flex"}`}>
+    <div
+      className={`${isNested ? "mb-1 ml-6" : "flex"}`}
+      onMouseEnter={() => onHover?.(true)}
+      onMouseLeave={() => onHover?.(false)}
+    >
       {!isNested && (
         <div className="mr-4 flex flex-col items-center">
           <div className="mb-2">{getCircleLetter(generationType)}</div>
@@ -194,7 +248,17 @@ export const ExpandableSection = ({
                         )}
                         {content && (
                           <div className="text-sm text-[#969696] whitespace-pre-wrap font-mono">
-                            {content}
+                            {typeof content === "string"
+                              ? content.replace(
+                                  /```([\s\S]*?)```/g,
+                                  (
+                                    match,
+                                    code
+                                  ) => `<pre class="bg-[#1E1E1E] p-4 rounded-md overflow-x-auto my-2">
+                                    <code class="text-[#D4D4D4] font-mono text-sm">${code}</code>
+                                  </pre>`
+                                )
+                              : content}
                           </div>
                         )}
                       </motion.div>

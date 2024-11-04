@@ -34,6 +34,7 @@ const Chat: React.FC<ChatProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const [hoveredItemIndex, setHoveredItemIndex] = useState<number>(-1);
 
   const suggestions = [
     "Price of BTC?",
@@ -267,22 +268,31 @@ const Chat: React.FC<ChatProps> = ({
               <div
                 key={index}
                 className="pt-3"
-                onMouseEnter={() => setHoveredGenerationId(index)}
-                onMouseLeave={() => setHoveredGenerationId(-1)}
+                onMouseEnter={() => {
+                  setHoveredGenerationId(index);
+                  setHoveredItemIndex(index);
+                }}
+                onMouseLeave={() => {
+                  setHoveredGenerationId(-1);
+                  setHoveredItemIndex(-1);
+                }}
               >
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.5, delay: index * 0.2 }}
                 >
-                  {/* Render Thought as the top-level expandable */}
                   <ExpandableSection
                     title="Thought"
                     generationType={generation.steps[0]?.action?.toLowerCase()}
                     isLast={index === generations.length - 1}
                     defaultExpanded={true}
                     isCurrent={index === generations.length - 1}
-                    isHovered={hoveredGenerationId === index}
+                    isHovered={hoveredItemIndex === index}
+                    onHover={(isHovered) => {
+                      setHoveredItemIndex(isHovered ? index : -1);
+                    }}
+                    isHighlighted={hoveredItemIndex === index}
                     content={
                       <div className="space-y-1 mt-0 mb-0 font-jakarta">
                         {/* Show thought content directly */}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect} from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ProgressItem } from "./ProgressItem";
 import { Generation, ProgressProps } from "../types/progress";
@@ -9,37 +9,57 @@ import { Generation, ProgressProps } from "../types/progress";
 const VISIBLE_ITEMS = 3;
 
 // Helper functions
-const createInitialItem = () => ({
-  label: "START",
-  description: "Type in the input field to start!",
-  isHighlighted: true,
-  isLast: true,
-  type: "OTHER" as const,
-  action: undefined,
-});
+const createInitialItem = () => {
+  const item = {
+    label: "START",
+    description: "Type in the input field to start!",
+    isHighlighted: true,
+    isLast: true,
+    type: "D",
+    action: undefined,
+  };
+  console.log("Created initial item:", item);
+  return item;
+};
 
 const mapGenerationToItem = (
   gen: Generation,
   index: number,
   length: number
-) => ({
-  label: gen.label,
-  description: gen.thought,
-  isHighlighted: index === length - 1 && !gen.isCompleted,
-  isLast: index === length - 1,
-  type: (gen.label || "OTHER").toUpperCase() as
-    | "NEXT"
-    | "ANSWER"
-    | "HTML"
-    | "OTHER",
-  action: gen.action,
-});
+) => {
+  // Determine the type based on the generation content
+  let type: string = "D"; // Default type
+
+  if (gen.thought) {
+    const thought = gen.thought.toLowerCase();
+    if (thought.includes("api") || thought.includes("data")) {
+      type = "R"; // RunCode for API calls
+    } else if (thought.includes("verify") || thought.includes("check")) {
+      type = "S"; // Save for verification steps
+    } else if (thought.includes("search") || thought.includes("find")) {
+      type = "G"; // Google for search operations
+    }
+  }
+
+  const item = {
+    label: gen.label || `Step ${index + 1}`, // Add a default label
+    description: gen.thought,
+    isHighlighted: index === length - 1 && !gen.isCompleted,
+    isLast: index === length - 1,
+    type: type, // Now we're explicitly setting a type
+    action: gen.action,
+  };
+  console.log("Mapped generation item:", item);
+  return item;
+};
 
 const Progress: React.FC<ProgressProps> = ({
   generations = [],
   hoveredGenerationId,
   setHoveredGenerationId,
 }) => {
+  console.log("Generations:", generations);
+
   // State declarations
   const [currentIndex, setCurrentIndex] = useState(0);
   const nodeRefs = React.useRef<(HTMLDivElement | null)[]>([]);
