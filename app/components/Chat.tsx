@@ -13,7 +13,7 @@ const createEmptyGeneration = (id: number): Generation => ({
   thought: "",
   steps: [],
   finalAnswer: "",
-  isCompleted: false
+  isCompleted: false,
 });
 
 const LoadingSpinner = () => (
@@ -128,10 +128,13 @@ const Chat: React.FC<ChatProps> = ({
 
           try {
             const parsedData = parse(jsonStr);
-            
-            if (parsedData?.type === "chunk" && parsedData?.path?.includes("answer")) {
+
+            if (
+              parsedData?.type === "chunk" &&
+              parsedData?.path?.includes("answer")
+            ) {
               accumulatedContent += parsedData.content || "";
-              
+
               // Process the accumulated content for markers
               const markers = {
                 thought: "",
@@ -139,20 +142,22 @@ const Chat: React.FC<ChatProps> = ({
                 observation: [],
                 "final answer": "",
                 input: [],
-                summary: ""
+                summary: "",
               };
 
               // Split by newlines and look for markers
               const lines = accumulatedContent.split("\n");
               let currentMarker = "";
-              
+
               for (const line of lines) {
-                const markerMatch = line.match(/^(Thought|Action|Observation|Final Answer|Input|Summary):\s*(.*)/i);
-                
+                const markerMatch = line.match(
+                  /^(Thought|Action|Observation|Final Answer|Input|Summary):\s*(.*)/i
+                );
+
                 if (markerMatch) {
                   currentMarker = markerMatch[1].toLowerCase();
                   const content = markerMatch[2].trim();
-                  
+
                   if (currentMarker === "thought") {
                     markers.thought = content;
                   } else if (currentMarker === "action") {
@@ -173,7 +178,8 @@ const Chat: React.FC<ChatProps> = ({
                   } else if (currentMarker === "action") {
                     markers.action[markers.action.length - 1] += "\n" + line;
                   } else if (currentMarker === "observation") {
-                    markers.observation[markers.observation.length - 1] += "\n" + line;
+                    markers.observation[markers.observation.length - 1] +=
+                      "\n" + line;
                   } else if (currentMarker === "final answer") {
                     markers["final answer"] += "\n" + line;
                   } else if (currentMarker === "input") {
@@ -189,12 +195,14 @@ const Chat: React.FC<ChatProps> = ({
                 ...currentGeneration,
                 thought: markers.thought,
                 steps: [
-                  ...markers.action.map(content => ({ action: content })),
-                  ...markers.observation.map(content => ({ observation: content })),
-                  ...markers.input.map(content => ({ input: content }))
+                  ...markers.action.map((content) => ({ action: content })),
+                  ...markers.observation.map((content) => ({
+                    observation: content,
+                  })),
+                  ...markers.input.map((content) => ({ input: content })),
                 ],
                 finalAnswer: markers["final answer"],
-                isCompleted: !!markers["final answer"]
+                isCompleted: !!markers["final answer"],
               };
 
               // Update generations
@@ -255,45 +263,38 @@ const Chat: React.FC<ChatProps> = ({
           <div className="p-0 rounded-md">
             {generations.map((generation, index) => (
               <div key={index} className="pt-3">
+                {/* Render Thought as the top-level expandable */}
                 <ExpandableSection
-                  title="RESPONSE"
+                  title="Thought"
                   defaultExpanded={true}
                   content={
                     <div className="space-y-1">
-                      {/* 1. Always render Thought first */}
-                      {generation.thought && (
-                        <ExpandableSection
-                          key={`thought-${generation.id}`}
-                          title="Thought"
-                          content={generation.thought}
-                          defaultExpanded={true}
-                          isNested={true}
-                        />
-                      )}
+                      {/* Content section */}
+                      <ExpandableSection
+                        key={`thought-content-${generation.id}`}
+                        title="Content"
+                        content={generation.thought}
+                        defaultExpanded={true}
+                        isNested={true}
+                      />
 
-                      {/* 2. Render all steps except Final Answer */}
-                      {generation.steps
-                        .filter(
-                          (step) => !Object.keys(step).includes("finalAnswer")
-                        )
-                        .map((step, stepIndex) => {
-                          const type = Object.keys(step)[0];
-                          const content = step[type];
+                      {/* Steps section */}
+                      {generation.steps.map((step, stepIndex) => {
+                        const type = Object.keys(step)[0];
+                        const content = step[type];
 
-                          return (
-                            <ExpandableSection
-                              key={`${type}-${stepIndex}`}
-                              title={
-                                type.charAt(0).toUpperCase() + type.slice(1)
-                              }
-                              content={content}
-                              defaultExpanded={true}
-                              isNested={true}
-                            />
-                          );
-                        })}
+                        return (
+                          <ExpandableSection
+                            key={`${type}-${stepIndex}`}
+                            title={type.charAt(0).toUpperCase() + type.slice(1)}
+                            content={content}
+                            defaultExpanded={true}
+                            isNested={true}
+                          />
+                        );
+                      })}
 
-                      {/* 3. Always render Final Answer last */}
+                      {/* Final Answer section */}
                       {generation.finalAnswer && (
                         <ExpandableSection
                           key={`final-answer-${generation.id}`}
