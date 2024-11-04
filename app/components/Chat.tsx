@@ -4,6 +4,17 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Generation, ChatProps } from "../types/progress";
 import { ExpandableSection } from "./ExpandableSection";
+import { parse } from "best-effort-json-parser";
+
+// ... rest of the imports ...
+
+const createEmptyGeneration = (id: number): Generation => ({
+  id,
+  thought: "",
+  steps: [],
+  finalAnswer: "",
+  isCompleted: false
+});
 
 const LoadingSpinner = () => (
   <motion.div
@@ -77,20 +88,7 @@ const Chat: React.FC<ChatProps> = ({
     setGenerations([]);
 
     let currentGeneration = createEmptyGeneration(0);
-    let allGenerations: Generation[] = [];
     let accumulatedContent = "";
-    let completeResponse = "";
-
-    function createEmptyGeneration(id: number): Generation {
-      return {
-        id: String(id),
-        label: "RESPONSE",
-        thought: "",
-        steps: [],
-        finalAnswer: "",
-        isCompleted: false,
-      };
-    }
 
     try {
       const res = await fetch("/api/wordware", {
@@ -111,10 +109,7 @@ const Chat: React.FC<ChatProps> = ({
 
       while (true) {
         const { value, done } = await reader.read();
-        if (done) {
-          console.log("Complete Response:", completeResponse);
-          break;
-        }
+        if (done) break;
 
         const chunk = new TextDecoder().decode(value);
         currentData += chunk;
@@ -132,137 +127,87 @@ const Chat: React.FC<ChatProps> = ({
           if (!jsonStr) continue;
 
           try {
-            const data = JSON.parse(jsonStr);
-            console.log("Parsed data:", data);
+            const parsedData = parse(jsonStr);
+            
+            if (parsedData?.type === "chunk" && parsedData?.path?.includes("answer")) {
+              accumulatedContent += parsedData.content || "";
+              
+              // Process the accumulated content for markers
+              const markers = {
+                thought: "",
+                action: [],
+                observation: [],
+                "final answer": "",
+                input: [],
+                summary: ""
+              };
 
-            if (data.type === "chunk" && data.path === "loop (new)[0].answer") {
-              const content = data.content?.trim() || "";
-              completeResponse += content;
-              console.log("Current complete response:", completeResponse);
-            }
-
-            if (data.type === "chunk" && data.path === "loop (new)[0].answer") {
-              const content = data.content?.trim() || "";
-
-              // Split content by newlines and process each line
-              const lines = content.split("\n");
+              // Split by newlines and look for markers
+              const lines = accumulatedContent.split("\n");
+              let currentMarker = "";
+              
               for (const line of lines) {
-                if (isNewMarker(line)) {
-                  // Handle accumulated content before starting new section
-                  if (accumulatedContent) {
-                    if (currentGeneration.steps.length > 0) {
-                      const lastStep =
-                        currentGeneration.steps[
-                          currentGeneration.steps.length - 1
-                        ];
-                      const lastStepType = Object.keys(lastStep)[0];
-                      currentGeneration.steps[
-                        currentGeneration.steps.length - 1
-                      ] = {
-                        [lastStepType]:
-                          lastStep[lastStepType] + accumulatedContent,
-                      };
-                    } else if (currentGeneration.thought) {
-                      currentGeneration.thought += accumulatedContent;
-                    }
-                    accumulatedContent = "";
+                const markerMatch = line.match(/^(Thought|Action|Observation|Final Answer|Input|Summary):\s*(.*)/i);
+                
+                if (markerMatch) {
+                  currentMarker = markerMatch[1].toLowerCase();
+                  const content = markerMatch[2].trim();
+                  
+                  if (currentMarker === "thought") {
+                    markers.thought = content;
+                  } else if (currentMarker === "action") {
+                    markers.action.push(content);
+                  } else if (currentMarker === "observation") {
+                    markers.observation.push(content);
+                  } else if (currentMarker === "final answer") {
+                    markers["final answer"] = content;
+                  } else if (currentMarker === "input") {
+                    markers.input.push(content);
+                  } else if (currentMarker === "summary") {
+                    markers.summary = content;
                   }
-
-                  // Split the line into marker and content, preserving the entire content after the marker
-                  const markerMatch = line.match(/^(.*?):\s*(.*)/);
-                  if (markerMatch) {
-                    const [, marker, markerContent] = markerMatch;
-                    const markerType = marker.trim().toLowerCase();
-
-                    // Clean up the content by handling multiple newlines and spaces
-                    const cleanedContent = markerContent
-                      .replace(/\n\n+/g, ' ') // Replace double+ newlines with space
-                      .replace(/\n/g, ' ')    // Replace single newlines with space
-                      .replace(/\s+/g, ' ')   // Replace multiple spaces with single space
-                      .trim();
-
-                    switch (markerType) {
-                      case "thought":
-                        if (
-                          currentGeneration.thought ||
-                          currentGeneration.steps.length > 0
-                        ) {
-                          allGenerations = [
-                            ...allGenerations,
-                            { ...currentGeneration },
-                          ];
-                          currentGeneration = createEmptyGeneration(
-                            allGenerations.length
-                          );
-                        }
-                        currentGeneration.thought = cleanedContent;
-                        break;
-                      case "action":
-                      case "input":
-                        if (cleanedContent.trim().toLowerCase() !== "done") {
-                          currentGeneration.steps.push({
-                            [markerType]: cleanedContent,
-                          });
-                        }
-                        break;
-                      case "final answer":
-                      case "finalanswer":
-                      case "final answer":
-                        if (currentGeneration.finalAnswer) {
-                          allGenerations = [
-                            ...allGenerations,
-                            { ...currentGeneration },
-                          ];
-                          currentGeneration = createEmptyGeneration(
-                            allGenerations.length
-                          );
-                        }
-                        currentGeneration.finalAnswer = cleanedContent;
-                        currentGeneration.isCompleted = true;
-                        break;
-                      default:
-                        if (cleanedContent.trim().toLowerCase() !== "done") {
-                          currentGeneration.steps.push({
-                            [markerType]: cleanedContent,
-                          });
-                        }
-                    }
-                  }
-                } else {
-                  // Add non-marker content to the appropriate section
-                  const cleanedLine = line
-                    .replace(/\n\n+/g, ' ')
-                    .replace(/\n/g, ' ')
-                    .replace(/\s+/g, ' ')
-                    .trim();
-
-                  if (cleanedLine) {
-                    if (currentGeneration.steps.length > 0) {
-                      const lastStep = currentGeneration.steps[currentGeneration.steps.length - 1];
-                      const lastStepType = Object.keys(lastStep)[0];
-                      if (lastStep[lastStepType]) {
-                        lastStep[lastStepType] += ' ' + cleanedLine;
-                      } else {
-                        lastStep[lastStepType] = cleanedLine;
-                      }
-                    }
+                } else if (currentMarker && line.trim()) {
+                  // Append to the current marker if it's a continuation line
+                  if (currentMarker === "thought") {
+                    markers.thought += "\n" + line;
+                  } else if (currentMarker === "action") {
+                    markers.action[markers.action.length - 1] += "\n" + line;
+                  } else if (currentMarker === "observation") {
+                    markers.observation[markers.observation.length - 1] += "\n" + line;
+                  } else if (currentMarker === "final answer") {
+                    markers["final answer"] += "\n" + line;
+                  } else if (currentMarker === "input") {
+                    markers.input[markers.input.length - 1] += "\n" + line;
+                  } else if (currentMarker === "summary") {
+                    markers.summary += "\n" + line;
                   }
                 }
               }
 
-              // Update generations after processing content
-              updateGenerations([...allGenerations, { ...currentGeneration }]);
+              // Update current generation
+              currentGeneration = {
+                ...currentGeneration,
+                thought: markers.thought,
+                steps: [
+                  ...markers.action.map(content => ({ action: content })),
+                  ...markers.observation.map(content => ({ observation: content })),
+                  ...markers.input.map(content => ({ input: content }))
+                ],
+                finalAnswer: markers["final answer"],
+                isCompleted: !!markers["final answer"]
+              };
+
+              // Update generations
+              setGenerations([currentGeneration]);
             }
           } catch (parseError) {
-            console.error("Parse error:", parseError, "Raw JSON:", jsonStr);
+            console.error("Parse error:", parseError);
           }
         }
       }
     } catch (error) {
       console.error("Request error:", error);
-      console.log("Final complete response:", completeResponse);
     } finally {
-      console.log("Final complete response:", completeResponse);
       setIsLoading(false);
       setQuestion("");
     }

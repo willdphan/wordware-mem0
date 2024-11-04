@@ -18,3 +18,16 @@ interface ChatProps {
   hoveredGenerationId: number;
   setHoveredGenerationId: (id: number) => void;
 }
+
+interface Action {
+  type: string;
+  input?: string;
+  result?: string;
+}
+
+interface ParsedResult {
+  thought: string;
+  actions: Action[];
+  finalAnswer: string;
+  searchResults?: string;
+}

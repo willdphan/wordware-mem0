@@ -12,6 +12,7 @@
     "@anthropic-ai/sdk": "^0.30.1",
     "@splinetool/react-spline": "^4.0.0",
     "abort-controller": "^3.0.0",
+    "best-effort-json-parser": "^1.1.2",
     "framer-motion": "^11.11.10",
     "next": "15.0.1",
     "react": "^18.2.0",
