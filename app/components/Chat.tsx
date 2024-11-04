@@ -134,9 +134,17 @@ const Chat: React.FC<ChatProps> = ({
                   switch (markerType) {
                     case "thought":
                       // Only create new generation if current one has content
-                      if (currentGeneration.thought || currentGeneration.steps.length > 0) {
-                        allGenerations = [...allGenerations, { ...currentGeneration }];
-                        currentGeneration = createEmptyGeneration(allGenerations.length);
+                      if (
+                        currentGeneration.thought ||
+                        currentGeneration.steps.length > 0
+                      ) {
+                        allGenerations = [
+                          ...allGenerations,
+                          { ...currentGeneration },
+                        ];
+                        currentGeneration = createEmptyGeneration(
+                          allGenerations.length
+                        );
                       }
                       currentGeneration.thought = markerContent;
                       break;
@@ -147,7 +155,9 @@ const Chat: React.FC<ChatProps> = ({
                       currentGeneration.steps.push({ input: markerContent });
                       break;
                     case "observation":
-                      currentGeneration.steps.push({ observation: markerContent });
+                      currentGeneration.steps.push({
+                        observation: markerContent,
+                      });
                       break;
                     case "summary":
                       currentGeneration.steps.push({ summary: markerContent });
@@ -159,19 +169,36 @@ const Chat: React.FC<ChatProps> = ({
                   }
 
                   // Update generations state
-                  updateGenerations([...allGenerations, { ...currentGeneration }]);
+                  updateGenerations([
+                    ...allGenerations,
+                    { ...currentGeneration },
+                  ]);
                 } else {
                   // Append to the last appropriate field based on the last step type
                   if (currentGeneration.steps.length > 0) {
-                    const lastStep = currentGeneration.steps[currentGeneration.steps.length - 1];
+                    const lastStep =
+                      currentGeneration.steps[
+                        currentGeneration.steps.length - 1
+                      ];
                     const lastStepType = Object.keys(lastStep)[0]; // get the type of the last step
-                    lastStep[lastStepType] += " " + content;
+
+                    // Create a new step with the appended content
+                    const updatedStep = {
+                      [lastStepType]: lastStep[lastStepType] + " " + content,
+                    };
+                    currentGeneration.steps[
+                      currentGeneration.steps.length - 1
+                    ] = updatedStep;
                   } else if (currentGeneration.thought) {
+                    // Update thought with new content
                     currentGeneration.thought += " " + content;
                   }
 
-                  // Update generations state
-                  updateGenerations([...allGenerations, { ...currentGeneration }]);
+                  // Update generations state with the modified generation
+                  updateGenerations([
+                    ...allGenerations,
+                    { ...currentGeneration },
+                  ]);
                 }
               }
             }
@@ -235,89 +262,63 @@ const Chat: React.FC<ChatProps> = ({
                   defaultExpanded={true}
                   content={
                     <div className="space-y-1">
-                      {/* Thought section */}
-                      <ExpandableSection
-                        title="Thought"
-                        content={
-                          <p className="text-[#979797]">{generation.thought}</p>
-                        }
-                        defaultExpanded={true}
-                        isNested={true}
-                      />
-
-                      {/* Action section */}
-                      <ExpandableSection
-                        title="Action"
-                        content={
-                          <div className="text-[#979797]">
-                            {generation.steps
-                              .filter((step) => step.action)
-                              .map((step, i) => (
-                                <p key={i}>{step.action}</p>
-                              ))}
-                          </div>
-                        }
-                        defaultExpanded={true}
-                        isNested={true}
-                      />
-
-                      {/* Input section */}
-                      <ExpandableSection
-                        title="Input"
-                        content={
-                          <div className="text-[#979797]">
-                            {generation.steps
-                              .filter((step) => step.input)
-                              .map((step, i) => (
-                                <p key={i}>{step.input}</p>
-                              ))}
-                          </div>
-                        }
-                        defaultExpanded={true}
-                        isNested={true}
-                      />
-
-                      {/* Observation section */}
-                      <ExpandableSection
-                        title="Observation"
-                        content={
-                          <div className="text-[#979797]">
-                            {generation.steps
-                              .filter((step) => step.observation)
-                              .map((step, i) => (
-                                <p key={i}>{step.observation}</p>
-                              ))}
-                          </div>
-                        }
-                        defaultExpanded={true}
-                        isNested={true}
-                      />
-
-                      {/* Summary section */}
-                      <ExpandableSection
-                        title="Summary"
-                        content={
-                          <div className="text-[#979797]">
-                            {generation.steps
-                              .filter((step) => step.summary)
-                              .map((step, i) => (
-                                <p key={i}>{step.summary}</p>
-                              ))}
-                          </div>
-                        }
-                        defaultExpanded={true}
-                        isNested={true}
-                      />
-
-                      {/* Final Answer section */}
-                      {generation.finalAnswer && (
-                        <ExpandableSection
-                          title="Final Answer"
-                          content={
-                            <p className="text-[#979797]">
-                              {generation.finalAnswer}
-                            </p>
+                      {generation.steps.map((step, stepIndex) => {
+                        const sections = [];
+                        
+                        // Helper function to add a section
+                        const addSection = (type: string, content: string) => {
+                          if (content.trim()) {
+                            sections.push(
+                              <ExpandableSection
+                                key={`${type.toLowerCase()}-${stepIndex}-${sections.length}`}
+                                title={type}
+                                content={content.trim()}
+                                defaultExpanded={true}
+                                isNested={true}
+                              />
+                            );
                           }
+                        };
+
+                        // Process the content and split on markers, preserving the markers
+                        const content = Object.values(step)[0] || '';
+                        const markerRegex = /(?:^|\n)(Thought:|Action:|Input:|Observation:|Final Answer:)/g;
+                        
+                        // Split content at markers but keep the markers
+                        const parts = content.split(markerRegex).filter(Boolean);
+                        let currentType = '';
+                        let currentContent = '';
+
+                        parts.forEach((part) => {
+                          // Check if this part is a marker
+                          if (/^(Thought:|Action:|Input:|Observation:|Final Answer:)$/.test(part)) {
+                            // Save previous section if exists
+                            if (currentType && currentContent) {
+                              addSection(currentType, currentContent);
+                            }
+                            // Start new section
+                            currentType = part.slice(0, -1); // Remove colon
+                            currentContent = '';
+                          } else {
+                            // This is content for the current section
+                            currentContent += part;
+                          }
+                        });
+
+                        // Add final section
+                        if (currentType && currentContent) {
+                          addSection(currentType, currentContent);
+                        }
+
+                        return sections;
+                      })}
+
+                      {/* Handle standalone sections */}
+                      {generation.thought && (
+                        <ExpandableSection
+                          key={`thought-${generation.id}`}
+                          title="Thought"
+                          content={generation.thought}
                           defaultExpanded={true}
                           isNested={true}
                         />
