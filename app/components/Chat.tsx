@@ -111,29 +111,20 @@ const Chat: React.FC<ChatProps> = ({
             if (data.type === "chunk" && data.path === "loop (new)[0].answer") {
               const content = data.content?.trim() || "";
 
-              // Add this helper function
-              function isNewMarker(content: string) {
+              function shouldStartNewSection(content: string) {
                 const markers = [
                   "Thought:",
                   "Action:",
                   "Input:",
                   "Observation:",
                   "Final Answer:",
-                  "Summary:",
                 ];
-
-                // Trim and normalize the content
-                const normalizedContent = content.trim().replace(/\n+/g, "\n");
-
-                // Check if content starts with any marker
-                return markers.some(
-                  (marker) =>
-                    normalizedContent.startsWith(marker) ||
-                    normalizedContent.includes(`\n${marker}`)
+                return markers.some((marker) =>
+                  content.toLowerCase().startsWith(marker.toLowerCase())
                 );
               }
 
-              if (isNewMarker(content)) {
+              if (shouldStartNewSection(content)) {
                 if (accumulatedContent) {
                   if (currentGeneration.steps.length > 0) {
                     const lastStep =
@@ -147,17 +138,25 @@ const Chat: React.FC<ChatProps> = ({
                       [lastStepType]:
                         lastStep[lastStepType] + accumulatedContent,
                     };
+                  } else if (currentGeneration.finalAnswer) {
+                    currentGeneration.finalAnswer += accumulatedContent;
                   } else if (currentGeneration.thought) {
                     currentGeneration.thought += accumulatedContent;
                   }
+                  accumulatedContent = "";
                 }
-                accumulatedContent = "";
 
-                const lines = content.split("\n");
-                const markerLine =
-                  lines.find((line) => isNewMarker(line)) || lines[0];
+                if (currentGeneration.isCompleted) {
+                  allGenerations = [
+                    ...allGenerations,
+                    { ...currentGeneration },
+                  ];
+                  currentGeneration = createEmptyGeneration(
+                    allGenerations.length
+                  );
+                }
 
-                const [marker, ...contentParts] = markerLine.split(":");
+                const [marker, ...contentParts] = content.split(":");
                 const markerContent = contentParts.join(":").trim();
                 const markerType = marker.trim().toLowerCase();
 
@@ -180,25 +179,31 @@ const Chat: React.FC<ChatProps> = ({
                   case "action":
                   case "input":
                   case "observation":
-                    const stepContent = lines.slice(1).join("\n").trim();
                     currentGeneration.steps.push({
-                      [markerType]:
-                        markerContent + (stepContent ? "\n" + stepContent : ""),
+                      [markerType]: markerContent,
                     });
                     break;
                   case "final answer":
                     currentGeneration.finalAnswer = markerContent;
-                    currentGeneration.isCompleted = true;
                     break;
                 }
-
-                updateGenerations([
-                  ...allGenerations,
-                  { ...currentGeneration },
-                ]);
               } else {
-                accumulatedContent += content;
+                if (currentGeneration.steps.length > 0) {
+                  const lastStep =
+                    currentGeneration.steps[currentGeneration.steps.length - 1];
+                  const lastStepType = Object.keys(lastStep)[0];
+                  currentGeneration.steps[currentGeneration.steps.length - 1] =
+                    {
+                      [lastStepType]: lastStep[lastStepType] + content,
+                    };
+                } else if (currentGeneration.finalAnswer) {
+                  currentGeneration.finalAnswer += content;
+                } else if (currentGeneration.thought) {
+                  currentGeneration.thought += content;
+                }
               }
+
+              updateGenerations([...allGenerations, { ...currentGeneration }]);
             }
           } catch (parseError) {
             console.error("Parse error:", parseError, "Raw JSON:", jsonStr);
