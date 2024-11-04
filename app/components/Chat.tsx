@@ -89,6 +89,7 @@ const Chat: React.FC<ChatProps> = ({
 
     let currentGeneration = createEmptyGeneration(0);
     let accumulatedContent = "";
+    let generationCount = 0;
 
     try {
       const res = await fetch("/api/wordware", {
@@ -135,14 +136,23 @@ const Chat: React.FC<ChatProps> = ({
             ) {
               accumulatedContent += parsedData.content || "";
 
+              // Check if we're starting a new thought
+              if (parsedData.content?.includes("Thought:") && currentGeneration.thought) {
+                // Save current generation and start a new one
+                setGenerations(prev => [...prev, currentGeneration]);
+                generationCount++;
+                currentGeneration = createEmptyGeneration(generationCount);
+                accumulatedContent = parsedData.content;
+              }
+
               // Process the accumulated content for markers
               const markers = {
                 thought: "",
-                action: [],
-                observation: [],
-                "final answer": "",
-                input: [],
+                action: "",
+                observation: "",
+                input: "",
                 summary: "",
+                "final answer": "",
               };
 
               // Split by newlines and look for markers
@@ -157,56 +167,31 @@ const Chat: React.FC<ChatProps> = ({
                 if (markerMatch) {
                   currentMarker = markerMatch[1].toLowerCase();
                   const content = markerMatch[2].trim();
-
-                  if (currentMarker === "thought") {
-                    markers.thought = content;
-                  } else if (currentMarker === "action") {
-                    markers.action.push(content);
-                  } else if (currentMarker === "observation") {
-                    markers.observation.push(content);
-                  } else if (currentMarker === "final answer") {
-                    markers["final answer"] = content;
-                  } else if (currentMarker === "input") {
-                    markers.input.push(content);
-                  } else if (currentMarker === "summary") {
-                    markers.summary = content;
-                  }
+                  markers[currentMarker] = content;
                 } else if (currentMarker && line.trim()) {
                   // Append to the current marker if it's a continuation line
-                  if (currentMarker === "thought") {
-                    markers.thought += "\n" + line;
-                  } else if (currentMarker === "action") {
-                    markers.action[markers.action.length - 1] += "\n" + line;
-                  } else if (currentMarker === "observation") {
-                    markers.observation[markers.observation.length - 1] +=
-                      "\n" + line;
-                  } else if (currentMarker === "final answer") {
-                    markers["final answer"] += "\n" + line;
-                  } else if (currentMarker === "input") {
-                    markers.input[markers.input.length - 1] += "\n" + line;
-                  } else if (currentMarker === "summary") {
-                    markers.summary += "\n" + line;
-                  }
+                  markers[currentMarker] += "\n" + line;
                 }
               }
+
+              // Create steps array in the correct order
+              const steps = [];
+              if (markers.action) steps.push({ action: markers.action });
+              if (markers.input) steps.push({ input: markers.input });
+              if (markers.summary) steps.push({ summary: markers.summary });
+              if (markers.observation) steps.push({ observation: markers.observation });
 
               // Update current generation
               currentGeneration = {
                 ...currentGeneration,
                 thought: markers.thought,
-                steps: [
-                  ...markers.action.map((content) => ({ action: content })),
-                  ...markers.observation.map((content) => ({
-                    observation: content,
-                  })),
-                  ...markers.input.map((content) => ({ input: content })),
-                ],
+                steps: steps,
                 finalAnswer: markers["final answer"],
                 isCompleted: !!markers["final answer"],
               };
 
-              // Update generations
-              setGenerations([currentGeneration]);
+              // Update generations with current one
+              setGenerations(prev => [...prev.slice(0, -1), currentGeneration]);
             }
           } catch (parseError) {
             console.error("Parse error:", parseError);
