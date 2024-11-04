@@ -281,72 +281,45 @@ const Chat: React.FC<ChatProps> = ({
                   defaultExpanded={true}
                   content={
                     <div className="space-y-1">
-                      {generation.steps.map((step, stepIndex) => {
-                        const sections = [];
-
-                        // Helper function to add a section
-                        const addSection = (type: string, content: string) => {
-                          if (content.trim()) {
-                            sections.push(
-                              <ExpandableSection
-                                key={`${type.toLowerCase()}-${stepIndex}-${
-                                  sections.length
-                                }`}
-                                title={type}
-                                content={content.trim()}
-                                defaultExpanded={true}
-                                isNested={true}
-                              />
-                            );
-                          }
-                        };
-
-                        // Process the content and split on markers, preserving the markers
-                        const content = Object.values(step)[0] || "";
-                        const markerRegex =
-                          /(?:^|\n)(Thought:|Action:|Input:|Observation:|Final Answer:|Summary:)/g;
-
-                        // Split content at markers but keep the markers
-                        const parts = content
-                          .split(markerRegex)
-                          .filter(Boolean);
-                        let currentType = "";
-                        let currentContent = "";
-
-                        parts.forEach((part) => {
-                          // Check if this part is a marker
-                          if (
-                            /^(Thought:|Action:|Input:|Observation:|Final Answer:|Summary:)$/.test(
-                              part
-                            )
-                          ) {
-                            // Save previous section if exists
-                            if (currentType && currentContent) {
-                              addSection(currentType, currentContent);
-                            }
-                            // Start new section
-                            currentType = part.slice(0, -1); // Remove colon
-                            currentContent = "";
-                          } else {
-                            // This is content for the current section
-                            currentContent += part;
-                          }
-                        });
-
-                        // Add final section
-                        if (currentType && currentContent) {
-                          addSection(currentType, currentContent);
-                        }
-
-                        return sections;
-                      })}
-
-                      {/* Handle standalone sections */}
+                      {/* 1. Always render Thought first */}
                       {generation.thought && (
                         <ExpandableSection
                           key={`thought-${generation.id}`}
                           title="Thought"
                           content={generation.thought}
+                          defaultExpanded={true}
+                          isNested={true}
+                        />
+                      )}
+
+                      {/* 2. Render all steps except Final Answer */}
+                      {generation.steps
+                        .filter(
+                          (step) => !Object.keys(step).includes("finalAnswer")
+                        )
+                        .map((step, stepIndex) => {
+                          const type = Object.keys(step)[0];
+                          const content = step[type];
+
+                          return (
+                            <ExpandableSection
+                              key={`${type}-${stepIndex}`}
+                              title={
+                                type.charAt(0).toUpperCase() + type.slice(1)
+                              }
+                              content={content}
+                              defaultExpanded={true}
+                              isNested={true}
+                            />
+                          );
+                        })}
+
+                      {/* 3. Always render Final Answer last */}
+                      {generation.finalAnswer && (
+                        <ExpandableSection
+                          key={`final-answer-${generation.id}`}
+                          title="Final Answer"
+                          content={generation.finalAnswer}
                           defaultExpanded={true}
                           isNested={true}
                         />
