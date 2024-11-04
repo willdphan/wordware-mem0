@@ -34,20 +34,19 @@ export const ExpandableSection = ({
     if (!type) return null;
     const firstLetter = type.charAt(0).toUpperCase();
 
-    // Define gradient borders based on letter
-    let borderStyle = "";
-    let textColor = "";
+    // Define default style for any letter
+    let borderStyle = "border-2 border-transparent bg-clip-padding p-[1px] bg-[#6A6A72]";
+    let textColor = "text-[#6A6A72]";
+
+    // Override styles for specific letters
     if (firstLetter === "N") {
-      borderStyle =
-        "border-2 border-transparent bg-clip-padding p-[1px] bg-[#BDFF8A]";
+      borderStyle = "border-2 border-transparent bg-clip-padding p-[1px] bg-[#BDFF8A]";
       textColor = "text-[#BDFF8A]";
     } else if (firstLetter === "A") {
-      borderStyle =
-        "border-2 border-transparent bg-clip-padding p-[1px] bg-[#9C95FF]";
+      borderStyle = "border-2 border-transparent bg-clip-padding p-[1px] bg-[#9C95FF]";
       textColor = "text-[#9C95FF]";
     } else if (firstLetter === "H") {
-      borderStyle =
-        "border-2 border-transparent bg-clip-padding p-[1px] bg-[#C5F1FF]";
+      borderStyle = "border-2 border-transparent bg-clip-padding p-[1px] bg-[#C5F1FF]";
       textColor = "text-[#C5F1FF]";
     }
 
@@ -64,7 +63,9 @@ export const ExpandableSection = ({
                       ? "0 0 6px 2px rgba(189, 255, 138, 0.5)"
                       : firstLetter === "A"
                       ? "0 0 6px 2px rgba(156, 149, 255, 0.5)"
-                      : "0 0 6px 2px rgba(197, 241, 255, 0.5)",
+                      : firstLetter === "H"
+                      ? "0 0 6px 2px rgba(197, 241, 255, 0.5)"
+                      : "0 0 6px 2px rgba(106, 106, 114, 0.5)", // Default glow for other letters
                 }
               : {}
           }
@@ -108,24 +109,6 @@ export const ExpandableSection = ({
       default:
         return type;
     }
-  };
-
-  const formatContent = (content: React.ReactNode) => {
-    // If content is not a string, return it as-is
-    if (typeof content !== 'string') {
-      return content;
-    }
-
-    if (content.includes('```')) {
-      // Handle code blocks
-      return content.split('```').map((part, index) => {
-        if (index % 2 === 1) { // Code block
-          return <pre key={index} className="bg-[#2d2d2d] p-2 rounded"><code>{part}</code></pre>;
-        }
-        return <span key={index}>{part}</span>;
-      });
-    }
-    return content;
   };
 
   return (
@@ -210,8 +193,8 @@ export const ExpandableSection = ({
                           <div className="text-sm text-[#969696]">{action}</div>
                         )}
                         {content && (
-                          <div className="whitespace-pre-wrap">
-                            {formatContent(content)}
+                          <div className="text-sm text-[#969696] whitespace-pre-wrap font-mono">
+                            {content}
                           </div>
                         )}
                       </motion.div>

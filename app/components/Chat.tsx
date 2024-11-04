@@ -278,7 +278,7 @@ const Chat: React.FC<ChatProps> = ({
                   {/* Render Thought as the top-level expandable */}
                   <ExpandableSection
                     title="Thought"
-                    generationType="RESPONSE"
+                    generationType={generation.steps[0]?.action?.toLowerCase()}
                     isLast={index === generations.length - 1}
                     defaultExpanded={true}
                     isCurrent={index === generations.length - 1}
