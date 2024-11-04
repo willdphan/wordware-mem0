@@ -130,33 +130,35 @@ const Chat: React.FC<ChatProps> = ({
           try {
             const parsedData = parse(jsonStr);
 
+            // Process the accumulated content for markers
+            const markers = {
+              thought: "",
+              action: "",
+              observation: "",
+              input: "",
+              summary: "",
+              "final answer": "",
+            };
+
             if (
               parsedData?.type === "chunk" &&
               parsedData?.path?.includes("answer")
             ) {
-              accumulatedContent += parsedData.content || "";
+              // Add new content to accumulated content
+              const newContent = parsedData.content || "";
+              accumulatedContent += newContent;
 
-              // Check if we're starting a new thought
-              if (
-                parsedData.content?.includes("Thought:") &&
-                currentGeneration.thought
-              ) {
+              // Check if this chunk contains a new thought marker
+              const isNewThought =
+                newContent.includes("Thought:") && currentGeneration.thought;
+
+              if (isNewThought) {
                 // Save current generation and start a new one
-                setGenerations((prev) => [...prev, currentGeneration]);
+                updateGenerations((prev) => [...prev, currentGeneration]);
                 generationCount++;
                 currentGeneration = createEmptyGeneration(generationCount);
-                accumulatedContent = parsedData.content;
+                accumulatedContent = newContent; // Reset accumulated content to just the new thought
               }
-
-              // Process the accumulated content for markers
-              const markers = {
-                thought: "",
-                action: "",
-                observation: "",
-                input: "",
-                summary: "",
-                "final answer": "",
-              };
 
               // Split by newlines and look for markers
               const lines = accumulatedContent.split("\n");
@@ -177,7 +179,15 @@ const Chat: React.FC<ChatProps> = ({
                 }
               }
 
-              // Create steps array in the correct order
+              console.log("Processing Chunk:", {
+                newContent,
+                isNewThought,
+                accumulatedContent,
+                currentGeneration,
+                markers,
+              });
+
+              // Create steps array
               const steps = [];
               if (markers.action) steps.push({ action: markers.action });
               if (markers.input) steps.push({ input: markers.input });
@@ -247,52 +257,85 @@ const Chat: React.FC<ChatProps> = ({
     <div className="flex flex-col h-screen bg-[#20201E] p-2">
       <div ref={chatContainerRef} className="flex-grow overflow-auto p-6">
         <div className="max-w-4xl mx-auto ">
-          <h3 className="text-sm border-b-[1px] border-[#969696] mx-0 md:mx-3 pb-4 text-[#538E28] mb-3 mt-8 md:mt-0">
+          <h3 className="text-xs border-b-[1px] border-[#969696] mx-0 md:mx-3 pb-4 text-[#538E28] mb-3 mt-8 md:mt-0">
             <span className="uppercase text-[#857AEC] ">
               APP ID: b808405c-f9b3-4429-9426-ec57b1a97862
             </span>
           </h3>
           <div className="p-0 rounded-md">
             {generations.map((generation, index) => (
-              <div key={index} className="pt-3">
-                {/* Render Thought as the top-level expandable */}
-                <ExpandableSection
-                  title="Thought"
-                  defaultExpanded={true}
-                  content={
-                    <div className="space-y-1">
-                      {/* Show thought content directly */}
-                      <div>{generation.thought}</div>
+              <div
+                key={index}
+                className="pt-3"
+                onMouseEnter={() => setHoveredGenerationId(index)}
+                onMouseLeave={() => setHoveredGenerationId(-1)}
+              >
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.5, delay: index * 0.2 }}
+                >
+                  {/* Render Thought as the top-level expandable */}
+                  <ExpandableSection
+                    title="Thought"
+                    generationType="RESPONSE"
+                    isLast={index === generations.length - 1}
+                    defaultExpanded={true}
+                    isCurrent={index === generations.length - 1}
+                    isHovered={hoveredGenerationId === index}
+                    content={
+                      <div className="space-y-1 mt-0 mb-0 font-jakarta">
+                        {/* Show thought content directly */}
+                        <div className="text-xs text-[#979797]">
+                          {generation.thought}
+                        </div>
 
-                      {/* Steps section */}
-                      {generation.steps.map((step, stepIndex) => {
-                        const type = Object.keys(step)[0];
-                        const content = step[type];
+                        {/* Steps section */}
+                        {generation.steps.map((step, stepIndex) => {
+                          const type = Object.keys(step)[0];
+                          const content = step[type];
 
-                        return (
+                          return (
+                            <ExpandableSection
+                              key={`${type}-${stepIndex}`}
+                              title={
+                                type.charAt(0).toUpperCase() + type.slice(1)
+                              }
+                              content={
+                                <p className="text-xs text-[#969696] font-jakarta">
+                                  {content}
+                                </p>
+                              }
+                              defaultExpanded={true}
+                              isNested={true}
+                            />
+                          );
+                        })}
+
+                        {/* Final Answer section */}
+                        {generation.finalAnswer && (
                           <ExpandableSection
-                            key={`${type}-${stepIndex}`}
-                            title={type.charAt(0).toUpperCase() + type.slice(1)}
-                            content={content}
+                            key={`final-answer-${generation.id}`}
+                            title="Final Answer"
+                            content={
+                              <p className="text-xs text-[#969696] font-jakarta">
+                                {generation.finalAnswer}
+                              </p>
+                            }
                             defaultExpanded={true}
                             isNested={true}
                           />
-                        );
-                      })}
+                        )}
 
-                      {/* Final Answer section */}
-                      {generation.finalAnswer && (
-                        <ExpandableSection
-                          key={`final-answer-${generation.id}`}
-                          title="Final Answer"
-                          content={generation.finalAnswer}
-                          defaultExpanded={true}
-                          isNested={true}
-                        />
-                      )}
-                    </div>
-                  }
-                />
+                        {generation.isCompleted && (
+                          <p className="text-green-600 mt-2 text-xs">
+                            Completed
+                          </p>
+                        )}
+                      </div>
+                    }
+                  />
+                </motion.div>
               </div>
             ))}
           </div>
@@ -322,7 +365,7 @@ const Chat: React.FC<ChatProps> = ({
                         key={suggestion}
                         type="button"
                         onClick={() => setQuestion(suggestion)}
-                        className={`px-3 py-1 text-sm text-white bg-[#252522] rounded-sm ${hoverColor} hover:text-black transition-colors`}
+                        className={`px-3 py-1 text-xs text-white bg-[#252522] rounded-sm ${hoverColor} hover:text-black transition-colors`}
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 0.2, delay: index * 0.1 }}
@@ -344,7 +387,7 @@ const Chat: React.FC<ChatProps> = ({
                   id="question"
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
-                  className="flex-grow border-[#373732] rounded-md border-[2px] py-3 px-3 focus:ring  focus:ring-opacity-50 placeholder:text-sm placeholder:text-[#969696] text-white text-sm bg-[#20201E]"
+                  className="flex-grow border-[#373732] rounded-md border-[2px] py-3 px-3 focus:ring  focus:ring-opacity-50 placeholder:text-xs placeholder:text-[#969696] text-white text-xs bg-[#20201E]"
                   rows={1}
                   placeholder="Type your message here..."
                   required
