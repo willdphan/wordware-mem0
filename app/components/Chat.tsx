@@ -151,10 +151,16 @@ const Chat: React.FC<ChatProps> = ({
                   // Handle accumulated content before starting new section
                   if (accumulatedContent) {
                     if (currentGeneration.steps.length > 0) {
-                      const lastStep = currentGeneration.steps[currentGeneration.steps.length - 1];
+                      const lastStep =
+                        currentGeneration.steps[
+                          currentGeneration.steps.length - 1
+                        ];
                       const lastStepType = Object.keys(lastStep)[0];
-                      currentGeneration.steps[currentGeneration.steps.length - 1] = {
-                        [lastStepType]: lastStep[lastStepType] + accumulatedContent
+                      currentGeneration.steps[
+                        currentGeneration.steps.length - 1
+                      ] = {
+                        [lastStepType]:
+                          lastStep[lastStepType] + accumulatedContent,
                       };
                     } else if (currentGeneration.thought) {
                       currentGeneration.thought += accumulatedContent;
@@ -168,20 +174,34 @@ const Chat: React.FC<ChatProps> = ({
                     const [, marker, markerContent] = markerMatch;
                     const markerType = marker.trim().toLowerCase();
 
+                    // Clean up the content by handling multiple newlines and spaces
+                    const cleanedContent = markerContent
+                      .replace(/\n\n+/g, ' ') // Replace double+ newlines with space
+                      .replace(/\n/g, ' ')    // Replace single newlines with space
+                      .replace(/\s+/g, ' ')   // Replace multiple spaces with single space
+                      .trim();
+
                     switch (markerType) {
                       case "thought":
-                        if (currentGeneration.thought || currentGeneration.steps.length > 0) {
-                          allGenerations = [...allGenerations, { ...currentGeneration }];
-                          currentGeneration = createEmptyGeneration(allGenerations.length);
+                        if (
+                          currentGeneration.thought ||
+                          currentGeneration.steps.length > 0
+                        ) {
+                          allGenerations = [
+                            ...allGenerations,
+                            { ...currentGeneration },
+                          ];
+                          currentGeneration = createEmptyGeneration(
+                            allGenerations.length
+                          );
                         }
-                        currentGeneration.thought = markerContent;
+                        currentGeneration.thought = cleanedContent;
                         break;
                       case "action":
                       case "input":
-                      case "observation":
-                        if (markerContent.trim().toLowerCase() !== 'done') {
+                        if (cleanedContent.trim().toLowerCase() !== "done") {
                           currentGeneration.steps.push({
-                            [markerType]: markerContent
+                            [markerType]: cleanedContent,
                           });
                         }
                         break;
@@ -189,32 +209,43 @@ const Chat: React.FC<ChatProps> = ({
                       case "finalanswer":
                       case "final answer":
                         if (currentGeneration.finalAnswer) {
-                          allGenerations = [...allGenerations, { ...currentGeneration }];
-                          currentGeneration = createEmptyGeneration(allGenerations.length);
+                          allGenerations = [
+                            ...allGenerations,
+                            { ...currentGeneration },
+                          ];
+                          currentGeneration = createEmptyGeneration(
+                            allGenerations.length
+                          );
                         }
-                        currentGeneration.finalAnswer = markerContent;
+                        currentGeneration.finalAnswer = cleanedContent;
                         currentGeneration.isCompleted = true;
                         break;
                       default:
-                        if (markerContent.trim().toLowerCase() !== 'done') {
+                        if (cleanedContent.trim().toLowerCase() !== "done") {
                           currentGeneration.steps.push({
-                            [markerType]: markerContent
+                            [markerType]: cleanedContent,
                           });
                         }
                     }
                   }
                 } else {
                   // Add non-marker content to the appropriate section
-                  if (currentGeneration.finalAnswer) {
-                    currentGeneration.finalAnswer += "\n" + line;
-                  } else if (currentGeneration.steps.length > 0) {
-                    const lastStep = currentGeneration.steps[currentGeneration.steps.length - 1];
-                    const lastStepType = Object.keys(lastStep)[0];
-                    lastStep[lastStepType] += "\n" + line;
-                  } else if (currentGeneration.thought) {
-                    currentGeneration.thought += "\n" + line;
-                  } else {
-                    accumulatedContent += "\n" + line;
+                  const cleanedLine = line
+                    .replace(/\n\n+/g, ' ')
+                    .replace(/\n/g, ' ')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+
+                  if (cleanedLine) {
+                    if (currentGeneration.steps.length > 0) {
+                      const lastStep = currentGeneration.steps[currentGeneration.steps.length - 1];
+                      const lastStepType = Object.keys(lastStep)[0];
+                      if (lastStep[lastStepType]) {
+                        lastStep[lastStepType] += ' ' + cleanedLine;
+                      } else {
+                        lastStep[lastStepType] = cleanedLine;
+                      }
+                    }
                   }
                 }
               }
