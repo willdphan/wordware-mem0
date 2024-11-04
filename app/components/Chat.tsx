@@ -53,6 +53,7 @@ const Chat: React.FC<ChatProps> = ({
 
     let currentGeneration = createEmptyGeneration(0);
     let allGenerations: Generation[] = [];
+    let accumulatedContent = "";
 
     function createEmptyGeneration(id: number): Generation {
       return {
@@ -99,130 +100,108 @@ const Chat: React.FC<ChatProps> = ({
             .map((line) => line.replace("data: ", ""))
             .join("");
 
-          // Add logging to see the filtered and joined result
           console.log("Filtered JSON string:", jsonStr);
 
+          if (!jsonStr) continue;
+
           try {
-            if (jsonStr) {
-              const data = JSON.parse(jsonStr);
-              console.log("Parsed data:", data);
+            const data = JSON.parse(jsonStr);
+            console.log("Parsed data:", data);
 
-              if (
-                data.type === "chunk" &&
-                data.path === "loop (new)[0].answer"
-              ) {
-                const content = data.content?.trim() || "";
+            if (data.type === "chunk" && data.path === "loop (new)[0].answer") {
+              const content = data.content?.trim() || "";
 
-                // Add this helper function
-                function isNewMarker(content: string) {
-                  const markers = [
-                    "Thought:",
-                    "Action:",
-                    "Input:",
-                    "Observation:",
-                    "Final Answer:",
-                    "Summary:",
-                  ];
+              // Add this helper function
+              function isNewMarker(content: string) {
+                const markers = [
+                  "Thought:",
+                  "Action:",
+                  "Input:",
+                  "Observation:",
+                  "Final Answer:",
+                  "Summary:",
+                ];
 
-                  // Trim and normalize the content
-                  const normalizedContent = content
-                    .trim()
-                    .replace(/\n+/g, "\n");
+                // Trim and normalize the content
+                const normalizedContent = content.trim().replace(/\n+/g, "\n");
 
-                  // Check if content starts with any marker
-                  return markers.some(
-                    (marker) =>
-                      normalizedContent.startsWith(marker) ||
-                      normalizedContent.includes(`\n${marker}`)
-                  );
-                }
+                // Check if content starts with any marker
+                return markers.some(
+                  (marker) =>
+                    normalizedContent.startsWith(marker) ||
+                    normalizedContent.includes(`\n${marker}`)
+                );
+              }
 
-                // Create new generation when we see a marker
-                if (isNewMarker(content)) {
-                  // Split on newlines and find the marker line
-                  const lines = content.split("\n");
-                  const markerLine =
-                    lines.find((line) => isNewMarker(line)) || lines[0];
-
-                  const [marker, ...contentParts] = markerLine.split(":");
-                  const markerContent = contentParts.join(":").trim();
-                  const markerType = marker.trim().toLowerCase();
-
-                  // Handle each marker type
-                  switch (markerType) {
-                    case "thought":
-                      if (
-                        currentGeneration.thought ||
-                        currentGeneration.steps.length > 0
-                      ) {
-                        allGenerations = [
-                          ...allGenerations,
-                          { ...currentGeneration },
-                        ];
-                        currentGeneration = createEmptyGeneration(
-                          allGenerations.length
-                        );
-                      }
-                      currentGeneration.thought = markerContent;
-                      break;
-                    case "action":
-                    case "input":
-                    case "observation":
-                      // Create a new step with the full content
-                      const stepContent = lines.slice(1).join("\n").trim(); // Get content after marker
-                      currentGeneration.steps.push({
-                        [markerType]:
-                          markerContent +
-                          (stepContent ? "\n" + stepContent : ""),
-                      });
-                      break;
-                    case "final answer":
-                      currentGeneration.finalAnswer = markerContent;
-                      currentGeneration.isCompleted = true;
-                      break;
-                  }
-
-                  // Update generations state
-                  updateGenerations([
-                    ...allGenerations,
-                    { ...currentGeneration },
-                  ]);
-                } else {
-                  // Handle content continuation
+              if (isNewMarker(content)) {
+                if (accumulatedContent) {
                   if (currentGeneration.steps.length > 0) {
                     const lastStep =
                       currentGeneration.steps[
                         currentGeneration.steps.length - 1
                       ];
                     const lastStepType = Object.keys(lastStep)[0];
-                    const currentContent = lastStep[lastStepType];
-
-                    // Append new content with proper spacing
                     currentGeneration.steps[
                       currentGeneration.steps.length - 1
                     ] = {
                       [lastStepType]:
-                        currentContent +
-                        (currentContent.endsWith("\n") ? "" : " ") +
-                        content.trim(),
+                        lastStep[lastStepType] + accumulatedContent,
                     };
                   } else if (currentGeneration.thought) {
-                    currentGeneration.thought =
-                      currentGeneration.thought +
-                      (currentGeneration.thought.endsWith("\n") ? "" : " ") +
-                      content.trim();
+                    currentGeneration.thought += accumulatedContent;
                   }
-
-                  // Update generations state
-                  updateGenerations([
-                    ...allGenerations,
-                    { ...currentGeneration },
-                  ]);
                 }
+                accumulatedContent = "";
+
+                const lines = content.split("\n");
+                const markerLine =
+                  lines.find((line) => isNewMarker(line)) || lines[0];
+
+                const [marker, ...contentParts] = markerLine.split(":");
+                const markerContent = contentParts.join(":").trim();
+                const markerType = marker.trim().toLowerCase();
+
+                switch (markerType) {
+                  case "thought":
+                    if (
+                      currentGeneration.thought ||
+                      currentGeneration.steps.length > 0
+                    ) {
+                      allGenerations = [
+                        ...allGenerations,
+                        { ...currentGeneration },
+                      ];
+                      currentGeneration = createEmptyGeneration(
+                        allGenerations.length
+                      );
+                    }
+                    currentGeneration.thought = markerContent;
+                    break;
+                  case "action":
+                  case "input":
+                  case "observation":
+                    const stepContent = lines.slice(1).join("\n").trim();
+                    currentGeneration.steps.push({
+                      [markerType]:
+                        markerContent + (stepContent ? "\n" + stepContent : ""),
+                    });
+                    break;
+                  case "final answer":
+                    currentGeneration.finalAnswer = markerContent;
+                    currentGeneration.isCompleted = true;
+                    break;
+                }
+
+                updateGenerations([
+                  ...allGenerations,
+                  { ...currentGeneration },
+                ]);
+              } else {
+                accumulatedContent += content;
               }
             }
-          } catch (e) {
-            console.error("Parse error:", e, "Raw JSON:", jsonStr);
+          } catch (parseError) {
+            console.error("Parse error:", parseError, "Raw JSON:", jsonStr);
           }
         }
       }
