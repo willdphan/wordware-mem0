@@ -99,6 +99,9 @@ const Chat: React.FC<ChatProps> = ({
             .map((line) => line.replace("data: ", ""))
             .join("");
 
+          // Add logging to see the filtered and joined result
+          console.log("Filtered JSON string:", jsonStr);
+
           try {
             if (jsonStr) {
               const data = JSON.parse(jsonStr);
@@ -118,22 +121,36 @@ const Chat: React.FC<ChatProps> = ({
                     "Input:",
                     "Observation:",
                     "Final Answer:",
+                    "Summary:",
                   ];
-                  return markers.some((marker) =>
-                    content.trim().startsWith(marker)
+
+                  // Trim and normalize the content
+                  const normalizedContent = content
+                    .trim()
+                    .replace(/\n+/g, "\n");
+
+                  // Check if content starts with any marker
+                  return markers.some(
+                    (marker) =>
+                      normalizedContent.startsWith(marker) ||
+                      normalizedContent.includes(`\n${marker}`)
                   );
                 }
 
                 // Create new generation when we see a marker
                 if (isNewMarker(content)) {
-                  const [marker, ...contentParts] = content.split(":");
+                  // Split on newlines and find the marker line
+                  const lines = content.split("\n");
+                  const markerLine =
+                    lines.find((line) => isNewMarker(line)) || lines[0];
+
+                  const [marker, ...contentParts] = markerLine.split(":");
                   const markerContent = contentParts.join(":").trim();
                   const markerType = marker.trim().toLowerCase();
 
                   // Handle each marker type
                   switch (markerType) {
                     case "thought":
-                      // Only create new generation if current one has content
                       if (
                         currentGeneration.thought ||
                         currentGeneration.steps.length > 0
@@ -149,18 +166,15 @@ const Chat: React.FC<ChatProps> = ({
                       currentGeneration.thought = markerContent;
                       break;
                     case "action":
-                      currentGeneration.steps.push({ action: markerContent });
-                      break;
                     case "input":
-                      currentGeneration.steps.push({ input: markerContent });
-                      break;
                     case "observation":
+                      // Create a new step with the full content
+                      const stepContent = lines.slice(1).join("\n").trim(); // Get content after marker
                       currentGeneration.steps.push({
-                        observation: markerContent,
+                        [markerType]:
+                          markerContent +
+                          (stepContent ? "\n" + stepContent : ""),
                       });
-                      break;
-                    case "summary":
-                      currentGeneration.steps.push({ summary: markerContent });
                       break;
                     case "final answer":
                       currentGeneration.finalAnswer = markerContent;
@@ -174,27 +188,32 @@ const Chat: React.FC<ChatProps> = ({
                     { ...currentGeneration },
                   ]);
                 } else {
-                  // Append to the last appropriate field based on the last step type
+                  // Handle content continuation
                   if (currentGeneration.steps.length > 0) {
                     const lastStep =
                       currentGeneration.steps[
                         currentGeneration.steps.length - 1
                       ];
-                    const lastStepType = Object.keys(lastStep)[0]; // get the type of the last step
+                    const lastStepType = Object.keys(lastStep)[0];
+                    const currentContent = lastStep[lastStepType];
 
-                    // Create a new step with the appended content
-                    const updatedStep = {
-                      [lastStepType]: lastStep[lastStepType] + " " + content,
-                    };
+                    // Append new content with proper spacing
                     currentGeneration.steps[
                       currentGeneration.steps.length - 1
-                    ] = updatedStep;
+                    ] = {
+                      [lastStepType]:
+                        currentContent +
+                        (currentContent.endsWith("\n") ? "" : " ") +
+                        content.trim(),
+                    };
                   } else if (currentGeneration.thought) {
-                    // Update thought with new content
-                    currentGeneration.thought += " " + content;
+                    currentGeneration.thought =
+                      currentGeneration.thought +
+                      (currentGeneration.thought.endsWith("\n") ? "" : " ") +
+                      content.trim();
                   }
 
-                  // Update generations state with the modified generation
+                  // Update generations state
                   updateGenerations([
                     ...allGenerations,
                     { ...currentGeneration },
@@ -264,13 +283,15 @@ const Chat: React.FC<ChatProps> = ({
                     <div className="space-y-1">
                       {generation.steps.map((step, stepIndex) => {
                         const sections = [];
-                        
+
                         // Helper function to add a section
                         const addSection = (type: string, content: string) => {
                           if (content.trim()) {
                             sections.push(
                               <ExpandableSection
-                                key={`${type.toLowerCase()}-${stepIndex}-${sections.length}`}
+                                key={`${type.toLowerCase()}-${stepIndex}-${
+                                  sections.length
+                                }`}
                                 title={type}
                                 content={content.trim()}
                                 defaultExpanded={true}
@@ -281,24 +302,31 @@ const Chat: React.FC<ChatProps> = ({
                         };
 
                         // Process the content and split on markers, preserving the markers
-                        const content = Object.values(step)[0] || '';
-                        const markerRegex = /(?:^|\n)(Thought:|Action:|Input:|Observation:|Final Answer:)/g;
-                        
+                        const content = Object.values(step)[0] || "";
+                        const markerRegex =
+                          /(?:^|\n)(Thought:|Action:|Input:|Observation:|Final Answer:|Summary:)/g;
+
                         // Split content at markers but keep the markers
-                        const parts = content.split(markerRegex).filter(Boolean);
-                        let currentType = '';
-                        let currentContent = '';
+                        const parts = content
+                          .split(markerRegex)
+                          .filter(Boolean);
+                        let currentType = "";
+                        let currentContent = "";
 
                         parts.forEach((part) => {
                           // Check if this part is a marker
-                          if (/^(Thought:|Action:|Input:|Observation:|Final Answer:)$/.test(part)) {
+                          if (
+                            /^(Thought:|Action:|Input:|Observation:|Final Answer:|Summary:)$/.test(
+                              part
+                            )
+                          ) {
                             // Save previous section if exists
                             if (currentType && currentContent) {
                               addSection(currentType, currentContent);
                             }
                             // Start new section
                             currentType = part.slice(0, -1); // Remove colon
-                            currentContent = '';
+                            currentContent = "";
                           } else {
                             // This is content for the current section
                             currentContent += part;

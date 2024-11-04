@@ -110,6 +110,24 @@ export const ExpandableSection = ({
     }
   };
 
+  const formatContent = (content: React.ReactNode) => {
+    // If content is not a string, return it as-is
+    if (typeof content !== 'string') {
+      return content;
+    }
+
+    if (content.includes('```')) {
+      // Handle code blocks
+      return content.split('```').map((part, index) => {
+        if (index % 2 === 1) { // Code block
+          return <pre key={index} className="bg-[#2d2d2d] p-2 rounded"><code>{part}</code></pre>;
+        }
+        return <span key={index}>{part}</span>;
+      });
+    }
+    return content;
+  };
+
   return (
     <div className={`${isNested ? "mb-1 ml-6" : "flex"}`}>
       {!isNested && (
@@ -192,8 +210,8 @@ export const ExpandableSection = ({
                           <div className="text-sm text-[#969696]">{action}</div>
                         )}
                         {content && (
-                          <div className="text-sm text-[#969696] whitespace-pre-wrap font-mono">
-                            {content}
+                          <div className="whitespace-pre-wrap">
+                            {formatContent(content)}
                           </div>
                         )}
                       </motion.div>
