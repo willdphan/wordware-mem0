@@ -137,9 +137,12 @@ const Chat: React.FC<ChatProps> = ({
               accumulatedContent += parsedData.content || "";
 
               // Check if we're starting a new thought
-              if (parsedData.content?.includes("Thought:") && currentGeneration.thought) {
+              if (
+                parsedData.content?.includes("Thought:") &&
+                currentGeneration.thought
+              ) {
                 // Save current generation and start a new one
-                setGenerations(prev => [...prev, currentGeneration]);
+                setGenerations((prev) => [...prev, currentGeneration]);
                 generationCount++;
                 currentGeneration = createEmptyGeneration(generationCount);
                 accumulatedContent = parsedData.content;
@@ -179,7 +182,8 @@ const Chat: React.FC<ChatProps> = ({
               if (markers.action) steps.push({ action: markers.action });
               if (markers.input) steps.push({ input: markers.input });
               if (markers.summary) steps.push({ summary: markers.summary });
-              if (markers.observation) steps.push({ observation: markers.observation });
+              if (markers.observation)
+                steps.push({ observation: markers.observation });
 
               // Update current generation
               currentGeneration = {
@@ -191,7 +195,10 @@ const Chat: React.FC<ChatProps> = ({
               };
 
               // Update generations with current one
-              setGenerations(prev => [...prev.slice(0, -1), currentGeneration]);
+              setGenerations((prev) => [
+                ...prev.slice(0, -1),
+                currentGeneration,
+              ]);
             }
           } catch (parseError) {
             console.error("Parse error:", parseError);
@@ -254,14 +261,8 @@ const Chat: React.FC<ChatProps> = ({
                   defaultExpanded={true}
                   content={
                     <div className="space-y-1">
-                      {/* Content section */}
-                      <ExpandableSection
-                        key={`thought-content-${generation.id}`}
-                        title="Content"
-                        content={generation.thought}
-                        defaultExpanded={true}
-                        isNested={true}
-                      />
+                      {/* Show thought content directly */}
+                      <div>{generation.thought}</div>
 
                       {/* Steps section */}
                       {generation.steps.map((step, stepIndex) => {
